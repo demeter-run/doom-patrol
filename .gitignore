@@ -1,0 +1,13 @@
+/target
+# nix / direnv
+result*
+.envrc
+.direnv
+# runtime
+protocol-parameters.json
+utxo.json
+*.vk
+*.sk
+/hydra-state/
+.DS_Store
+.pre-commit-config.yaml

@@ -1,0 +1,14 @@
+[default]
+ttl_minutes = 1
+port = 8000
+address = "0.0.0.0"
+
+[[local.nodes]]
+local_url = "ws://hydra-node-0"
+port = 4001
+admin_key_file = "/home/app/admin.sk"
+max_players = 5
+region = "local"
+persisted = false
+reserved = false
+stats-file = "/home/app/local-stats"

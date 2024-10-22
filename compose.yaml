@@ -1,0 +1,37 @@
+services:
+  server:
+    build:
+      context: .
+      target: final
+    environment:
+      - ROCKET_PROFILE=local
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/home/app
+  hydra-node-0:
+    image: ghcr.io/cardano-scaling/hydra-node
+    platform: linux/amd64
+    command:
+      - offline
+      - --host
+      - 0.0.0.0
+      - --api-host
+      - 0.0.0.0
+      - --port
+      - "5001"
+      - --api-port
+      - "4001"
+      - --hydra-signing-key 
+      - /data/hydra.sk
+      - --ledger-protocol-parameters 
+      - /data/protocol-parameters.json
+      - --initial-utxo 
+      - /data/utxo.json
+      - --persistence-dir 
+      - /data/hydra-state
+    ports:
+      - 4001:4001
+      - 5001:5001
+    volumes:
+      - .:/data
