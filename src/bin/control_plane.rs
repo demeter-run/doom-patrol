@@ -3,12 +3,17 @@ use rocket::{http::Method, routes};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 
 use doom_patrol::{
+    config::Config,
     context::Context,
     routes::{global::global, head::head, heads::heads, new_game::new_game},
 };
 
 #[rocket::main]
 async fn main() {
+    let rocket = rocket::build();
+    let figment = rocket.figment();
+    let config = figment.extract::<Config>().expect("invalid config");
+
     let client = Client::try_default()
         .await
         .expect("Failed to create K8s client");
@@ -23,8 +28,8 @@ async fn main() {
         )
         .allow_credentials(true);
 
-    let _rocket = rocket::build()
-        .manage(Context { client })
+    let _rocket = rocket
+        .manage(Context::new(client, config))
         .mount("/", routes![new_game, heads, head, global])
         .attach(cors.to_cors().unwrap())
         .launch()

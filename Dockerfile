@@ -8,7 +8,7 @@
 # Create a stage for building the application.
 
 ARG RUST_VERSION=1.81.0
-ARG APP_NAME=hydra_control_plane
+ARG APP_NAME=control_plane
 FROM rust:${RUST_VERSION}-slim-bullseye AS build
 ARG APP_NAME
 WORKDIR /app
@@ -61,14 +61,13 @@ WORKDIR /home/app
 
 # Copy the executable from the "build" stage.
 COPY --from=build /bin/server /bin/server
-COPY Rocket.toml /Rocket.toml
-COPY docker/entrypoint.sh /entrypoint.sh
 
 # Configure rocket to listen on all interfaces.
 ENV ROCKET_ADDRESS=0.0.0.0
+ENV ROCKET_PORT=8000
 
 # Expose the port that the application listens on.
 EXPOSE 8000
 
 # What the container should run when it is started.
-CMD ["/entrypoint.sh"]
+CMD ["/bin/server"]
