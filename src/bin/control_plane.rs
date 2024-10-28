@@ -2,11 +2,7 @@ use kube::Client;
 use rocket::{http::Method, routes};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 
-use doom_patrol::{
-    config::Config,
-    context::Context,
-    routes::{global::global, head::head, heads::heads, new_game::new_game},
-};
+use doom_patrol::{config::Config, context::Context, k8s::K8sHelper, routes::new_game::new_game};
 
 #[rocket::main]
 async fn main() {
@@ -29,8 +25,8 @@ async fn main() {
         .allow_credentials(true);
 
     let _rocket = rocket
-        .manage(Context::new(client, config))
-        .mount("/", routes![new_game, heads, head, global])
+        .manage(Context::new(K8sHelper::new(client, config)))
+        .mount("/", routes![new_game])
         .attach(cors.to_cors().unwrap())
         .launch()
         .await

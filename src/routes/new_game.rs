@@ -1,7 +1,7 @@
 use rocket::{get, http::Status, serde::json::Json, State};
 use serde::Serialize;
 
-use crate::context::{Context, PodInfo};
+use crate::{context::Context, k8s::PodInfo};
 
 #[derive(Serialize)]
 pub struct NewGameResponse {
@@ -31,6 +31,7 @@ pub async fn new_game(
     context: &State<Context>,
 ) -> Result<Json<NewGameResponse>, Status> {
     let info = context
+        .k8s
         .new_hydra_pod(address)
         .await
         .map_err(|e| Status::InternalServerError)?;
