@@ -10,9 +10,9 @@ use std::{sync::Arc, time::Duration};
 use thiserror::Error;
 use tracing::{error, info};
 
-use crate::{config::Config, custom_resource::HydraDoomPodStatus};
+use crate::{config::Config, custom_resource::HydraDoomNodeStatus};
 
-use super::custom_resource::{HydraDoomPod, HYDRA_DOOM_POD_FINALIZER};
+use super::custom_resource::{HydraDoomNode, HYDRA_DOOM_NODE_FINALIZER};
 
 pub struct K8sConstants {
     pub config_dir: String,
@@ -48,7 +48,7 @@ impl K8sContext {
         }
     }
 
-    pub async fn patch(&self, crd: &HydraDoomPod) -> anyhow::Result<()> {
+    pub async fn patch(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
         info!("Running patch");
         match tokio::join!(
             self.patch_deployment(crd),
@@ -80,7 +80,7 @@ impl K8sContext {
         Ok(())
     }
 
-    pub async fn delete(&self, crd: &HydraDoomPod) -> anyhow::Result<()> {
+    pub async fn delete(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
         match tokio::join!(self.remove_deployment(crd), self.remove_service(crd)) {
             (Ok(_), Ok(_)) => Ok(()),
             (Ok(_), Err(err)) => Err(err.context("Failed to remove service.")),
@@ -89,12 +89,12 @@ impl K8sContext {
         }
     }
 
-    async fn patch_crd(&self, crd: &HydraDoomPod) -> anyhow::Result<HydraDoomPod> {
-        let api: Api<HydraDoomPod> =
+    async fn patch_crd(&self, crd: &HydraDoomNode) -> anyhow::Result<HydraDoomNode> {
+        let api: Api<HydraDoomNode> =
             Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
 
         // Create or patch the deployment
-        let status = serde_json::to_value(HydraDoomPodStatus {
+        let status = serde_json::to_value(HydraDoomNodeStatus {
             local_url: format!(
                 "ws://{}.{}.svc.cluster.local:{}",
                 crd.name_any(),
@@ -115,7 +115,7 @@ impl K8sContext {
             &Patch::Merge(json!({
                 "status": status,
                 "metadata": {
-                    "finalizers": [HYDRA_DOOM_POD_FINALIZER]
+                    "finalizers": [HYDRA_DOOM_NODE_FINALIZER]
                 }
             })),
         )
@@ -137,14 +137,14 @@ impl K8sContext {
         })
     }
 
-    async fn patch_deployment(&self, crd: &HydraDoomPod) -> anyhow::Result<Deployment> {
+    async fn patch_deployment(&self, crd: &HydraDoomNode) -> anyhow::Result<Deployment> {
         let deployments: Api<Deployment> =
             Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
 
         // Create or patch the deployment
         deployments
             .patch(
-                &crd.pod_name(),
+                &crd.internal_name(),
                 &PatchParams::apply("hydra-doom-pod-controller"),
                 &Patch::Apply(&crd.deployment(&self.config, &self.constants)),
             )
@@ -155,24 +155,24 @@ impl K8sContext {
             })
     }
 
-    async fn remove_deployment(&self, crd: &HydraDoomPod) -> anyhow::Result<()> {
+    async fn remove_deployment(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
         let deployments: Api<Deployment> =
             Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
         let dp = DeleteParams::default();
 
-        match deployments.delete(&crd.pod_name(), &dp).await {
+        match deployments.delete(&crd.internal_name(), &dp).await {
             Ok(_) => Ok(()),
             Err(e) => Err(e.into()),
         }
     }
 
-    async fn patch_service(&self, crd: &HydraDoomPod) -> anyhow::Result<Service> {
+    async fn patch_service(&self, crd: &HydraDoomNode) -> anyhow::Result<Service> {
         // Apply the service to the cluster
         let services: Api<Service> =
             Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
         services
             .patch(
-                &crd.pod_name(),
+                &crd.internal_name(),
                 &PatchParams::apply("hydra-doom-pod-controller"),
                 &Patch::Apply(&crd.service(&self.config, &self.constants)),
             )
@@ -183,11 +183,11 @@ impl K8sContext {
             })
     }
 
-    async fn remove_service(&self, crd: &HydraDoomPod) -> anyhow::Result<()> {
+    async fn remove_service(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
         let services: Api<Service> =
             Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
         let dp = DeleteParams::default();
-        match services.delete(&crd.pod_name(), &dp).await {
+        match services.delete(&crd.internal_name(), &dp).await {
             Ok(_) => Ok(()),
             Err(e) => Err(e.into()),
         }
@@ -208,23 +208,23 @@ impl From<anyhow::Error> for Error {
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-pub async fn reconcile(crd: Arc<HydraDoomPod>, ctx: Arc<K8sContext>) -> Result<Action, Error> {
+pub async fn reconcile(crd: Arc<HydraDoomNode>, ctx: Arc<K8sContext>) -> Result<Action, Error> {
     tracing::info!("Reconciling {}", crd.name_any());
     // Check if deletion timestamp is set
     if crd.metadata.deletion_timestamp.is_some() {
-        let hydra_doom_pod_api: Api<HydraDoomPod> =
+        let hydra_doom_pod_api: Api<HydraDoomNode> =
             Api::namespaced(ctx.client.clone(), &crd.namespace().unwrap());
         // Finalizer logic for cleanup
         if crd
             .finalizers()
-            .contains(&HYDRA_DOOM_POD_FINALIZER.to_string())
+            .contains(&HYDRA_DOOM_NODE_FINALIZER.to_string())
         {
             // Delete associated resources
             ctx.delete(&crd).await?;
             // Remove finalizer
             let patch = json!({
                 "metadata": {
-                    "finalizers": crd.finalizers().iter().filter(|f| *f != HYDRA_DOOM_POD_FINALIZER).collect::<Vec<_>>()
+                    "finalizers": crd.finalizers().iter().filter(|f| *f != HYDRA_DOOM_NODE_FINALIZER).collect::<Vec<_>>()
                 }
             });
             let _ = hydra_doom_pod_api
@@ -244,7 +244,7 @@ pub async fn reconcile(crd: Arc<HydraDoomPod>, ctx: Arc<K8sContext>) -> Result<A
     Ok(Action::await_change())
 }
 
-pub fn error_policy(crd: Arc<HydraDoomPod>, err: &Error, _ctx: Arc<K8sContext>) -> Action {
+pub fn error_policy(crd: Arc<HydraDoomNode>, err: &Error, _ctx: Arc<K8sContext>) -> Action {
     error!(
         error = err.to_string(),
         crd = serde_json::to_string(&crd).unwrap(),

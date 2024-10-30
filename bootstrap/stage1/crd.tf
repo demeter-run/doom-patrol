@@ -1,9 +1,9 @@
-resource "kubernetes_manifest" "customresourcedefinition_hydradoompods_hydra_doom" {
+resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_doom" {
   manifest = {
     "apiVersion" = "apiextensions.k8s.io/v1"
     "kind" = "CustomResourceDefinition"
     "metadata" = {
-      "name" = "hydradoompods.hydra.doom"
+      "name" = "hydradoomnodes.hydra.doom"
     }
     "spec" = {
       "group" = "hydra.doom"
@@ -11,12 +11,12 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoompods_hydra_doo
         "categories" = [
           "hydradoom",
         ]
-        "kind" = "HydraDoomPod"
-        "plural" = "hydradoompods"
+        "kind" = "HydraDoomNode"
+        "plural" = "hydradoomnodes"
         "shortNames" = [
-          "hydradoompod",
+          "hydradoomnode",
         ]
-        "singular" = "hydradoompod"
+        "singular" = "hydradoomnode"
       }
       "scope" = "Namespaced"
       "versions" = [
@@ -36,7 +36,7 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoompods_hydra_doo
           "name" = "v1alpha1"
           "schema" = {
             "openAPIV3Schema" = {
-              "description" = "Auto-generated derived type for HydraDoomPodSpec via `CustomResource`"
+              "description" = "Auto-generated derived type for HydraDoomNodeSpec via `CustomResource`"
               "properties" = {
                 "spec" = {
                   "properties" = {
@@ -106,7 +106,7 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoompods_hydra_doo
               "required" = [
                 "spec",
               ]
-              "title" = "HydraDoomPod"
+              "title" = "HydraDoomNode"
               "type" = "object"
             }
           }

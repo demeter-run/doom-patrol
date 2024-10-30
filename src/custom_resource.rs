@@ -14,25 +14,25 @@ use crate::config::Config;
 
 use super::controller::K8sConstants;
 
-pub static HYDRA_DOOM_POD_FINALIZER: &str = "hydradoompod/finalizer";
+pub static HYDRA_DOOM_NODE_FINALIZER: &str = "hydradoomnode/finalizer";
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
-    kind = "HydraDoomPod",
+    kind = "HydraDoomNode",
     group = "hydra.doom",
     version = "v1alpha1",
-    shortname = "hydradoompod",
+    shortname = "hydradoomnode",
     category = "hydradoom",
-    plural = "hydradoompods",
+    plural = "hydradoomnodes",
     namespaced
 )]
-#[kube(status = "HydraDoomPodStatus")]
+#[kube(status = "HydraDoomNodeStatus")]
 #[kube(printcolumn = r#"
         {"name": "Local URI", "jsonPath":".status.localUrl", "type": "string"}, 
         {"name": "External URI", "jsonPath": ".status.externalUrl", "type": "string"}
     "#)]
 #[serde(rename_all = "camelCase")]
-pub struct HydraDoomPodSpec {
+pub struct HydraDoomNodeSpec {
     pub image: Option<String>,
     pub open_head_image: Option<String>,
     pub configmap: Option<String>,
@@ -46,27 +46,27 @@ pub struct HydraDoomPodSpec {
 
 #[derive(Deserialize, Serialize, Clone, Default, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct HydraDoomPodStatus {
+pub struct HydraDoomNodeStatus {
     pub local_url: String,
     pub external_url: String,
 }
 
-impl HydraDoomPod {
-    pub fn pod_name(&self) -> String {
-        format!("hydra-pod-{}", self.name_any())
+impl HydraDoomNode {
+    pub fn internal_name(&self) -> String {
+        format!("hydra-doom-node-{}", self.name_any())
     }
 
-    pub fn pod_labels(&self) -> BTreeMap<String, String> {
+    pub fn internal_labels(&self) -> BTreeMap<String, String> {
         BTreeMap::from([
-            ("component".to_string(), "hydra-pod".to_string()),
-            ("hydra-pod-id".to_string(), self.name_any()),
+            ("component".to_string(), "hydra-doom-node".to_string()),
+            ("hydra-doom-node-id".to_string(), self.name_any()),
             ("run-on".to_string(), "fargate".to_string()),
         ])
     }
 
     pub fn deployment(&self, config: &Config, constants: &K8sConstants) -> Deployment {
-        let name = self.pod_name();
-        let labels = self.pod_labels();
+        let name = self.internal_name();
+        let labels = self.internal_labels();
         let mut open_head_args = vec![
             "--network-id".to_string(),
             self.spec.network_id.to_string(),
@@ -207,8 +207,8 @@ impl HydraDoomPod {
     }
 
     pub fn service(&self, _config: &Config, constants: &K8sConstants) -> Service {
-        let name = self.pod_name();
-        let labels = self.pod_labels();
+        let name = self.internal_name();
+        let labels = self.internal_labels();
         Service {
             metadata: ObjectMeta {
                 name: Some(name),

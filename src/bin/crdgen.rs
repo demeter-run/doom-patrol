@@ -1,6 +1,6 @@
-use doom_patrol::custom_resource::HydraDoomPod;
+use doom_patrol::custom_resource::HydraDoomNode;
 use kube::CustomResourceExt;
 
 fn main() {
-    print!("{}", serde_yaml::to_string(&HydraDoomPod::crd()).unwrap())
+    print!("{}", serde_yaml::to_string(&HydraDoomNode::crd()).unwrap())
 }

@@ -7,7 +7,7 @@ use tracing::{error, info, instrument};
 use doom_patrol::{
     config::Config,
     controller::{error_policy, reconcile, K8sContext},
-    custom_resource::HydraDoomPod,
+    custom_resource::HydraDoomNode,
 };
 
 #[tokio::main]
@@ -23,7 +23,7 @@ async fn main() -> Result<()> {
     let context = Arc::new(K8sContext::new(client.clone(), config));
 
     // Create controller for MyApp custom resource
-    let api: Api<HydraDoomPod> = Api::all(client);
+    let api: Api<HydraDoomNode> = Api::all(client);
     info!("Running controller.");
     Controller::new(api, Default::default())
         .run(reconcile, error_policy, context)
