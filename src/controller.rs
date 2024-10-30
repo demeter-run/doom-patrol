@@ -1,12 +1,12 @@
-use anyhow::{bail, Context};
-use k8s_openapi::api::{apps::v1::Deployment, core::v1::Service};
+use anyhow::bail;
+use k8s_openapi::api::{apps::v1::Deployment, core::v1::Service, networking::v1::Ingress};
 use kube::{
     api::{DeleteParams, Patch, PatchParams},
     runtime::controller::Action,
     Api, Client, ResourceExt,
 };
 use serde_json::json;
-use std::{sync::Arc, time::Duration};
+use std::{collections::BTreeMap, sync::Arc, time::Duration};
 use thiserror::Error;
 use tracing::{error, info};
 
@@ -20,6 +20,8 @@ pub struct K8sConstants {
     pub persistence_dir: String,
     pub node_port: i32,
     pub port: i32,
+    pub ingress_class_name: String,
+    pub ingress_annotations: BTreeMap<String, String>,
 }
 impl Default for K8sConstants {
     fn default() -> Self {
@@ -29,6 +31,32 @@ impl Default for K8sConstants {
             persistence_dir: "/var/persistence".to_string(),
             node_port: 5001,
             port: 4001,
+            ingress_class_name: "nginx".to_string(),
+            ingress_annotations: [
+                (
+                    "nginx.ingress.kubernetes.io/proxy-read-timeout".to_string(),
+                    "3600".to_string(),
+                ),
+                (
+                    "nginx.ingress.kubernetes.io/proxy-send-timeout".to_string(),
+                    "3600".to_string(),
+                ),
+                (
+                    "nginx.ingress.kubernetes.io/server-snippets".to_string(),
+                    "location / {\n\
+                      proxy_set_header Upgrade $http_upgrade;\n\
+                      proxy_http_version 1.1;\n\
+                      proxy_set_header X-Forwarded-Host $http_host;\n\
+                      proxy_set_header X-Forwarded-Proto $scheme;\n\
+                      proxy_set_header X-Forwarded-For $remote_addr;\n\
+                      proxy_set_header Host $host;\n\
+                      proxy_set_header Connection \"upgrade\";\n\
+                      proxy_cache_bypass $http_upgrade;\n\
+                    }\n"
+                    .to_string(),
+                ),
+            ]
+            .into(),
         }
     }
 }
@@ -53,26 +81,30 @@ impl K8sContext {
         match tokio::join!(
             self.patch_deployment(crd),
             self.patch_service(crd),
+            self.patch_ingress(crd),
             self.patch_crd(crd)
         ) {
-            (Ok(_), Ok(_), Ok(_)) => (),
-            (Ok(_), Err(_), Ok(_)) => {
-                self.remove_deployment(crd)
-                    .await
-                    .context("Failed to create resources")?;
+            (Ok(_), Ok(_), Ok(_), Ok(_)) => (),
+            (Err(_), Ok(_), Ok(_), Ok(_)) => {
+                self.remove_service(crd).await?;
+                self.remove_ingress(crd).await?;
             }
-            (Err(_), Ok(_), Ok(_)) => {
-                self.remove_service(crd)
-                    .await
-                    .context("Failed to create resources")?;
+            (Ok(_), Err(_), Ok(_), Ok(_)) => {
+                self.remove_deployment(crd).await?;
+                self.remove_ingress(crd).await?;
             }
-            (Ok(_), Ok(_), Err(_)) => {
-                self.remove_deployment(crd)
-                    .await
-                    .context("Failed to create resources")?;
-                self.remove_service(crd)
-                    .await
-                    .context("Failed to create resources")?;
+            (Ok(_), Ok(_), Err(_), Ok(_)) => {
+                self.remove_deployment(crd).await?;
+                self.remove_service(crd).await?;
+            }
+            (Err(_), Err(_), Ok(_), Ok(_)) => {
+                self.remove_ingress(crd).await?;
+            }
+            (Err(_), Ok(_), Err(_), Ok(_)) => {
+                self.remove_service(crd).await?;
+            }
+            (Ok(_), Err(_), Err(_), Ok(_)) => {
+                self.remove_deployment(crd).await?;
             }
             _ => bail!("Failed to create resources"),
         };
@@ -81,11 +113,13 @@ impl K8sContext {
     }
 
     pub async fn delete(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
-        match tokio::join!(self.remove_deployment(crd), self.remove_service(crd)) {
-            (Ok(_), Ok(_)) => Ok(()),
-            (Ok(_), Err(err)) => Err(err.context("Failed to remove service.")),
-            (Err(err), Ok(_)) => Err(err.context("Failed to remove deployment.")),
-            (Err(err), Err(_)) => Err(err.context("Failed to remove resources.")),
+        match tokio::join!(
+            self.remove_deployment(crd),
+            self.remove_service(crd),
+            self.remove_ingress(crd)
+        ) {
+            (Ok(_), Ok(_), Ok(_)) => Ok(()),
+            _ => bail!("Failed to remove resources"),
         }
     }
 
@@ -188,6 +222,30 @@ impl K8sContext {
             Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
         let dp = DeleteParams::default();
         match services.delete(&crd.internal_name(), &dp).await {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    async fn patch_ingress(&self, crd: &HydraDoomNode) -> anyhow::Result<Ingress> {
+        // Apply the service to the cluster
+        let api: Api<Ingress> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
+        api.patch(
+            &crd.internal_name(),
+            &PatchParams::apply("hydra-doom-pod-controller"),
+            &Patch::Apply(&crd.service(&self.config, &self.constants)),
+        )
+        .await
+        .map_err(|err| {
+            error!(err = err.to_string(), "Failed to create ingress.");
+            err.into()
+        })
+    }
+
+    async fn remove_ingress(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
+        let api: Api<Ingress> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
+        let dp = DeleteParams::default();
+        match api.delete(&crd.internal_name(), &dp).await {
             Ok(_) => Ok(()),
             Err(e) => Err(e.into()),
         }

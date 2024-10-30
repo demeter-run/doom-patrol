@@ -8,6 +8,24 @@ metadata:
   tags: 
     sundae-labs:cost-allocation:Service: hydra-doom
 
+managedNodeGroups:
+  # Consistent
+  - name: be-ad-x86-az1
+    tags: 
+      sundae-labs:cost-allocation:Service: hydra-doom
+    labels:
+      hydra.doom/availability-sla: best-effort
+      hydra.doom/compute-profile: admin
+      hydra.doom/compute-arch: x86
+      hydra.doom/availability-zone: az1
+    instanceType: t3a.medium
+    minSize: 0
+    maxSize: 2
+    desiredCapacity: 1
+    spot: true
+    availabilityZones:
+      - us-east-1b
+
 fargateProfiles:
   - name: fp-default
     tags: 

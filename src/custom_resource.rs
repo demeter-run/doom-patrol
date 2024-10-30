@@ -4,6 +4,10 @@ use k8s_openapi::api::{
         ConfigMapVolumeSource, Container, ContainerPort, EmptyDirVolumeSource, PodSpec,
         PodTemplateSpec, Service, ServicePort, ServiceSpec, Volume, VolumeMount,
     },
+    networking::v1::{
+        HTTPIngressPath, HTTPIngressRuleValue, Ingress, IngressBackend, IngressRule,
+        IngressServiceBackend, IngressSpec, ServiceBackendPort,
+    },
 };
 use kube::{api::ObjectMeta, CustomResource, ResourceExt};
 use schemars::JsonSchema;
@@ -227,6 +231,41 @@ impl HydraDoomNode {
                     ..Default::default()
                 }]),
                 type_: Some("ClusterIP".to_string()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }
+    }
+
+    pub fn ingress(&self, _config: &Config, constants: &K8sConstants) -> Ingress {
+        let name = self.internal_name();
+        Ingress {
+            metadata: ObjectMeta {
+                name: Some(name.clone()),
+                annotations: Some(constants.ingress_annotations.clone()),
+                ..Default::default()
+            },
+            spec: Some(IngressSpec {
+                ingress_class_name: Some(constants.ingress_class_name.clone()),
+                rules: Some(vec![IngressRule {
+                    host: Some("aaaaaaaa".to_string()),
+                    http: Some(HTTPIngressRuleValue {
+                        paths: vec![HTTPIngressPath {
+                            path: Some("/".to_string()),
+                            path_type: "Prefix".to_string(),
+                            backend: IngressBackend {
+                                service: Some(IngressServiceBackend {
+                                    name: name.clone(),
+                                    port: Some(ServiceBackendPort {
+                                        number: Some(constants.port),
+                                        ..Default::default()
+                                    }),
+                                }),
+                                ..Default::default()
+                            },
+                        }],
+                    }),
+                }]),
                 ..Default::default()
             }),
             ..Default::default()
