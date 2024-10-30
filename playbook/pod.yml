@@ -1,0 +1,12 @@
+apiVersion: hydra.doom/v1alpha1
+kind: HydraDoomPod
+metadata:
+  name: 5py7r5
+  namespace: hydra-doom
+spec:
+  networkId: 1
+  seedInput: foo
+  participant: foo
+  party: foo
+  commitInputs:
+  - a

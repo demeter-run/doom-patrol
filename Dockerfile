@@ -8,9 +8,9 @@
 # Create a stage for building the application.
 
 ARG RUST_VERSION=1.81.0
-ARG APP_NAME=control_plane
+ARG BIN=operator
 FROM rust:${RUST_VERSION}-slim-bullseye AS build
-ARG APP_NAME
+ARG BIN
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y libssl-dev pkg-config
@@ -30,7 +30,7 @@ RUN --mount=type=bind,source=src,target=src \
     <<EOF
 set -e
 cargo build --locked --release
-cp ./target/release/$APP_NAME /bin/server
+cp ./target/release/$BIN /bin/server
 EOF
 
 ################################################################################

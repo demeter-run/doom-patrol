@@ -1,0 +1,18 @@
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: hydra-doom-dev-cluster
+  region: us-east-1
+  tags: 
+    sundae-labs:cost-allocation:Service: hydra-doom
+
+fargateProfiles:
+  - name: fp-default
+    tags: 
+      sundae-labs:cost-allocation:Service: hydra-doom
+    selectors:
+      - namespace: hydra-doom
+        labels:
+          run-on: fargate
