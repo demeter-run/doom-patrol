@@ -233,7 +233,7 @@ impl K8sContext {
         api.patch(
             &crd.internal_name(),
             &PatchParams::apply("hydra-doom-pod-controller"),
-            &Patch::Apply(&crd.service(&self.config, &self.constants)),
+            &Patch::Apply(&crd.ingress(&self.config, &self.constants)),
         )
         .await
         .map_err(|err| {
