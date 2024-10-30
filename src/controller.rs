@@ -122,7 +122,18 @@ impl K8sContext {
         .await
         .map_err(|err| {
             error!(err = err.to_string(), "Failed to patch CRD.");
-            err.into()
+            anyhow::Error::from(err)
+        })?;
+
+        api.patch_status(
+            &crd.name_any(),
+            &PatchParams::default(),
+            &Patch::Merge(json!({ "status": status })),
+        )
+        .await
+        .map_err(|err| {
+            error!(err = err.to_string(), "Failed to patch CRD.");
+            anyhow::Error::from(err)
         })
     }
 
