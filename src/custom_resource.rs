@@ -68,22 +68,16 @@ impl HydraDoomNode {
         ])
     }
 
-    pub fn internal_url(&self, _config: &Config, constants: &K8sConstants) -> String {
+    pub fn internal_host(&self) -> String {
         format!(
-            "ws://{}.{}.svc.cluster.local:{}",
+            "{}.{}.svc.cluster.local",
             self.name_any(),
             self.namespace().unwrap(),
-            constants.port
         )
     }
 
-    pub fn external_url(&self, config: &Config, _constants: &K8sConstants) -> String {
-        format!(
-            "ws://{}.{}:{}",
-            self.name_any(),
-            config.external_domain,
-            config.external_port
-        )
+    pub fn external_host(&self, config: &Config, _constants: &K8sConstants) -> String {
+        format!("{}.{}", self.name_any(), config.external_domain,)
     }
 
     pub fn deployment(&self, config: &Config, constants: &K8sConstants) -> Deployment {
@@ -266,7 +260,7 @@ impl HydraDoomNode {
             spec: Some(IngressSpec {
                 ingress_class_name: Some(constants.ingress_class_name.clone()),
                 rules: Some(vec![IngressRule {
-                    host: Some(self.external_url(config, constants)),
+                    host: Some(self.external_host(config, constants)),
                     http: Some(HTTPIngressRuleValue {
                         paths: vec![HTTPIngressPath {
                             path: Some("/".to_string()),

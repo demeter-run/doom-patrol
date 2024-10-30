@@ -129,8 +129,12 @@ impl K8sContext {
 
         // Create or patch the deployment
         let status = serde_json::to_value(HydraDoomNodeStatus {
-            local_url: crd.internal_url(&self.config, &self.constants),
-            external_url: crd.external_url(&self.config, &self.constants),
+            local_url: format!("ws://{}:{}", crd.internal_host(), self.constants.port),
+            external_url: format!(
+                "ws://{}:{}",
+                crd.external_host(&self.config, &self.constants),
+                self.config.external_port
+            ),
         })
         .unwrap();
 
