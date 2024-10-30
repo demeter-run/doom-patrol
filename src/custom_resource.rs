@@ -60,6 +60,7 @@ impl HydraDoomPod {
         BTreeMap::from([
             ("component".to_string(), "hydra-pod".to_string()),
             ("hydra-pod-id".to_string(), self.name_any()),
+            ("run-on".to_string(), "fargate".to_string()),
         ])
     }
 
