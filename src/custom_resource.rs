@@ -191,7 +191,7 @@ impl HydraDoomPod {
                                         .spec
                                         .configmap
                                         .clone()
-                                        .unwrap_or(config.image.clone()),
+                                        .unwrap_or(config.configmap.clone()),
                                     ..Default::default()
                                 }),
                                 ..Default::default()
