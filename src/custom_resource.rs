@@ -112,18 +112,11 @@ impl HydraDoomPod {
                                 "--output-file".to_string(),
                                 format!("{}/hydra", constants.data_dir),
                             ]),
-                            volume_mounts: Some(vec![
-                                VolumeMount {
-                                    name: "config".to_string(),
-                                    mount_path: constants.config_dir.clone(),
-                                    ..Default::default()
-                                },
-                                VolumeMount {
-                                    name: "data".to_string(),
-                                    mount_path: constants.data_dir.clone(),
-                                    ..Default::default()
-                                },
-                            ]),
+                            volume_mounts: Some(vec![VolumeMount {
+                                name: "data".to_string(),
+                                mount_path: constants.data_dir.clone(),
+                                ..Default::default()
+                            }]),
                             ..Default::default()
                         }]),
                         containers: vec![
