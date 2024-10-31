@@ -16,6 +16,12 @@ resource "kubernetes_cluster_role" "cluster_role" {
   }
 
   rule {
+    api_groups = ["networking.k8s.io"]
+    resources  = ["ingresses"]
+    verbs      = ["*"]
+  }
+
+  rule {
     api_groups = ["hydra.doom"]
     resources  = ["*"]
     verbs      = ["*"]

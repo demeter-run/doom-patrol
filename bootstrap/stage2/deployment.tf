@@ -13,9 +13,14 @@ resource "kubernetes_deployment_v1" "operator" {
   spec {
     replicas = 1
 
+    // No 2 replicas simultaneously
+    strategy {
+      type = "Recreate"
+    }
+
     selector {
       match_labels = {
-        role = local.component
+        role     = local.component
         "run-on" = "fargate"
       }
     }
@@ -23,7 +28,7 @@ resource "kubernetes_deployment_v1" "operator" {
     template {
       metadata {
         labels = {
-          role = local.component
+          role     = local.component
           "run-on" = "fargate"
         }
       }
