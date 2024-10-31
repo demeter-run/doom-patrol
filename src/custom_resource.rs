@@ -32,6 +32,8 @@ pub static HYDRA_DOOM_NODE_FINALIZER: &str = "hydradoomnode/finalizer";
 )]
 #[kube(status = "HydraDoomNodeStatus")]
 #[kube(printcolumn = r#"
+        {"name": "State", "jsonPath":".status.state", "type": "string"}, 
+        {"name": "Transactions", "jsonPath":".status.transactions", "type": "string"}, 
         {"name": "Local URI", "jsonPath":".status.localUrl", "type": "string"}, 
         {"name": "External URI", "jsonPath": ".status.externalUrl", "type": "string"}
     "#)]
