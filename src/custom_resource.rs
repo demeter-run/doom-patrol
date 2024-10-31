@@ -53,6 +53,8 @@ pub struct HydraDoomNodeSpec {
 pub struct HydraDoomNodeStatus {
     pub local_url: String,
     pub external_url: String,
+    pub state: String,
+    pub transactions: usize,
 }
 
 impl HydraDoomNode {

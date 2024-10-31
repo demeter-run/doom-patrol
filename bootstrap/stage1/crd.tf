@@ -95,10 +95,20 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                     "localUrl" = {
                       "type" = "string"
                     }
+                    "state" = {
+                      "type" = "string"
+                    }
+                    "transactions" = {
+                      "format" = "uint"
+                      "minimum" = 0
+                      "type" = "integer"
+                    }
                   }
                   "required" = [
                     "externalUrl",
                     "localUrl",
+                    "state",
+                    "transactions",
                   ]
                   "type" = "object"
                 }
