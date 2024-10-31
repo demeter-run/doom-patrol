@@ -276,6 +276,7 @@ impl HydraDoomNode {
                 selector: Some(labels),
                 ports: Some(vec![
                     ServicePort {
+                        name: Some("websocket".to_string()),
                         port: constants.port,
                         target_port: Some(
                             k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(
@@ -286,6 +287,7 @@ impl HydraDoomNode {
                         ..Default::default()
                     },
                     ServicePort {
+                        name: Some("metrics".to_string()),
                         port: constants.metrics_port,
                         target_port: Some(
                             k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(
