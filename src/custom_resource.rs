@@ -90,7 +90,7 @@ impl HydraDoomNode {
     pub fn internal_host(&self) -> String {
         format!(
             "{}.{}.svc.cluster.local",
-            self.name_any(),
+            self.internal_name(),
             self.namespace().unwrap(),
         )
     }
