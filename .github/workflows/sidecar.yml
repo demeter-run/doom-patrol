@@ -43,7 +43,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: docker/dockerfile.postgres
+          file: docker/dockerfile.sidecar
           push: true
           tags: ghcr.io/demeter-run/doom-patrol-metrics-exporter:${{ github.sha }}-${{ matrix.suffix }}
 
