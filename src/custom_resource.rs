@@ -213,7 +213,6 @@ impl HydraDoomNode {
                                     "--host".to_string(),
                                     "localhost".to_string(),
                                     "--port".to_string(),
-                                    "0.0.0.0".to_string(),
                                     constants.port.to_string(),
                                 ]),
                                 ports: Some(vec![ContainerPort {
