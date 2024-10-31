@@ -209,6 +209,7 @@ impl HydraDoomNode {
                                         .unwrap_or(config.sidecar_image.clone()),
                                 ),
                                 args: Some(vec![
+                                    "metrics-exporter".to_string(),
                                     "--host".to_string(),
                                     "localhost".to_string(),
                                     "--port".to_string(),
