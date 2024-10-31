@@ -162,39 +162,14 @@ impl K8sContext {
         let api: Api<HydraDoomNode> =
             Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
 
-        // Create or patch the deployment
-        let status = serde_json::to_value(HydraDoomNodeStatus {
-            state: "Online".to_string(),
-            transactions: 2423514,
-            local_url: format!("ws://{}:{}", crd.internal_host(), self.constants.port),
-            external_url: format!(
-                "ws://{}:{}",
-                crd.external_host(&self.config, &self.constants),
-                self.config.external_port
-            ),
-        })
-        .unwrap();
-
         api.patch(
             &crd.name_any(),
             &PatchParams::default(),
             &Patch::Merge(json!({
-                "status": status,
                 "metadata": {
                     "finalizers": [HYDRA_DOOM_NODE_FINALIZER]
                 }
             })),
-        )
-        .await
-        .map_err(|err| {
-            error!(err = err.to_string(), "Failed to patch CRD.");
-            anyhow::Error::from(err)
-        })?;
-
-        api.patch_status(
-            &crd.name_any(),
-            &PatchParams::default(),
-            &Patch::Merge(json!({ "status": status })),
         )
         .await
         .map_err(|err| {
