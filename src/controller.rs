@@ -1,18 +1,45 @@
 use anyhow::bail;
 use k8s_openapi::api::{apps::v1::Deployment, core::v1::Service, networking::v1::Ingress};
 use kube::{
-    api::{DeleteParams, Patch, PatchParams},
+    api::{DeleteParams, ListParams, Patch, PatchParams},
     runtime::controller::Action,
     Api, Client, ResourceExt,
 };
 use serde_json::json;
 use std::{collections::BTreeMap, sync::Arc, time::Duration};
 use thiserror::Error;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::{config::Config, custom_resource::HydraDoomNodeStatus};
 
 use super::custom_resource::{HydraDoomNode, HYDRA_DOOM_NODE_FINALIZER};
+
+pub enum HydraDoomNodeState {
+    Offline,
+    Online,
+    HeadIsInitializing,
+    HeadIsOpen,
+}
+impl From<f64> for HydraDoomNodeState {
+    fn from(value: f64) -> Self {
+        match value {
+            1.0 => Self::Online,
+            2.0 => Self::HeadIsInitializing,
+            3.0 => Self::HeadIsOpen,
+            _ => Self::Offline,
+        }
+    }
+}
+impl From<HydraDoomNodeState> for String {
+    fn from(val: HydraDoomNodeState) -> Self {
+        match val {
+            HydraDoomNodeState::Offline => "Offline".to_string(),
+            HydraDoomNodeState::Online => "Online".to_string(),
+            HydraDoomNodeState::HeadIsInitializing => "HeadIsInitializing".to_string(),
+            HydraDoomNodeState::HeadIsOpen => "HeadIsOpen".to_string(),
+        }
+    }
+}
 
 pub struct K8sConstants {
     pub config_dir: String,
@@ -22,6 +49,10 @@ pub struct K8sConstants {
     pub port: i32,
     pub ingress_class_name: String,
     pub ingress_annotations: BTreeMap<String, String>,
+    pub metrics_port: i32,
+    pub metrics_endpoint: String,
+    pub state_metric: String,
+    pub transactions_metric: String,
 }
 impl Default for K8sConstants {
     fn default() -> Self {
@@ -31,6 +62,10 @@ impl Default for K8sConstants {
             persistence_dir: "/var/persistence".to_string(),
             node_port: 5001,
             port: 4001,
+            metrics_port: 8000,
+            metrics_endpoint: "/metrics".to_string(),
+            state_metric: "hydra_doom_node_state".to_string(),
+            transactions_metric: "hydra_doom_node_transactions".to_string(),
             ingress_class_name: "nginx".to_string(),
             ingress_annotations: [
                 (
@@ -246,6 +281,126 @@ impl K8sContext {
             Ok(_) => Ok(()),
             Err(e) => Err(e.into()),
         }
+    }
+
+    async fn get_status_from_crd(&self, crd: &HydraDoomNode) -> HydraDoomNodeStatus {
+        let url = format!(
+            "http://{}:{}{}",
+            crd.internal_host(),
+            self.constants.metrics_port,
+            self.constants.metrics_endpoint
+        );
+        let default = HydraDoomNodeStatus::offline(crd, &self.config, &self.constants);
+
+        match reqwest::get(&url).await {
+            Ok(response) => match response.text().await {
+                Ok(body) => {
+                    let lines: Vec<_> = body.lines().map(|s| Ok(s.to_owned())).collect();
+                    match prometheus_parse::Scrape::parse(lines.into_iter()) {
+                        Ok(metrics) => {
+                            let state = metrics
+                                .clone()
+                                .samples
+                                .into_iter()
+                                .find(|sample| sample.metric == self.constants.state_metric)
+                                .map(|sample| match sample.value {
+                                    prometheus_parse::Value::Gauge(value) => {
+                                        HydraDoomNodeState::from(value)
+                                    }
+                                    _ => HydraDoomNodeState::Offline,
+                                });
+
+                            let transactions = metrics
+                                .clone()
+                                .samples
+                                .into_iter()
+                                .find(|sample| sample.metric == self.constants.state_metric)
+                                .map(|sample| match sample.value {
+                                    prometheus_parse::Value::Counter(count) => count.round() as i64,
+                                    _ => 0,
+                                });
+                            match (state, transactions) {
+                                (Some(state), Some(transactions)) => HydraDoomNodeStatus {
+                                    transactions,
+                                    state: state.into(),
+                                    local_url: format!(
+                                        "ws://{}:{}",
+                                        crd.internal_host(),
+                                        self.constants.port
+                                    ),
+                                    external_url: format!(
+                                        "ws://{}:{}",
+                                        crd.external_host(&self.config, &self.constants),
+                                        self.config.external_port
+                                    ),
+                                },
+                                _ => default,
+                            }
+                        }
+                        Err(err) => {
+                            warn!(
+                                err = err.to_string(),
+                                "Failed to parse metrics for {}",
+                                crd.name_any()
+                            );
+                            default
+                        }
+                    }
+                }
+                Err(err) => {
+                    warn!(
+                        err = err.to_string(),
+                        "Failed to parse request response to metrics endpoint for {}",
+                        crd.name_any()
+                    );
+                    default
+                }
+            },
+            Err(err) => {
+                warn!(
+                    err = err.to_string(),
+                    "Failed to request metrics for {}",
+                    crd.name_any()
+                );
+                default
+            }
+        }
+    }
+
+    async fn patch_statuses(&self) -> anyhow::Result<()> {
+        let api: Api<HydraDoomNode> = Api::all(self.client.clone());
+
+        let crds = api.list(&ListParams::default()).await?;
+
+        let mut awaitables = vec![];
+        for crd in &crds {
+            awaitables.push(async {
+                let name = crd.name_any();
+                if let Err(err) = api
+                    .patch_status(
+                        &name,
+                        &PatchParams::default(),
+                        &Patch::Merge(json!({ "status": self.get_status_from_crd(crd).await })),
+                    )
+                    .await
+                {
+                    warn!(err = err.to_string(), "Failed to status for CRD.");
+                };
+            })
+        }
+
+        futures::future::join_all(awaitables).await;
+
+        Ok(())
+    }
+}
+
+pub async fn patch_statuses(context: Arc<K8sContext>) -> Result<()> {
+    info!("Running status patcher loop.");
+
+    loop {
+        context.patch_statuses().await?;
+        tokio::time::sleep(Duration::from_secs(5)).await;
     }
 }
 

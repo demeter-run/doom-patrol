@@ -6,7 +6,7 @@ use tracing::{error, info, instrument};
 
 use doom_patrol::{
     config::Config,
-    controller::{error_policy, reconcile, K8sContext},
+    controller::{error_policy, patch_statuses, reconcile, K8sContext},
     custom_resource::HydraDoomNode,
 };
 
@@ -25,15 +25,17 @@ async fn main() -> Result<()> {
     // Create controller for MyApp custom resource
     let api: Api<HydraDoomNode> = Api::all(client);
     info!("Running controller.");
-    Controller::new(api, Default::default())
-        .run(reconcile, error_policy, context)
+    let controller = Controller::new(api, Default::default())
+        .run(reconcile, error_policy, context.clone())
         .for_each(|res| async move {
             match res {
                 Ok(o) => info!("Reconciled {:?}", o),
                 Err(e) => error!("Reconcile failed: {:?}", e),
             }
-        })
-        .await;
+        });
+    let patch_statuses_controller = patch_statuses(context.clone());
+
+    let _ = tokio::join!(controller, patch_statuses_controller);
 
     Ok(())
 }

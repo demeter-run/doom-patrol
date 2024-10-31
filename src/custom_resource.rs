@@ -41,6 +41,7 @@ pub static HYDRA_DOOM_NODE_FINALIZER: &str = "hydradoomnode/finalizer";
 pub struct HydraDoomNodeSpec {
     pub image: Option<String>,
     pub open_head_image: Option<String>,
+    pub sidecar_image: Option<String>,
     pub configmap: Option<String>,
     pub network_id: u8,
     pub seed_input: String,
@@ -56,7 +57,21 @@ pub struct HydraDoomNodeStatus {
     pub local_url: String,
     pub external_url: String,
     pub state: String,
-    pub transactions: usize,
+    pub transactions: i64,
+}
+impl HydraDoomNodeStatus {
+    pub fn offline(crd: &HydraDoomNode, config: &Config, constants: &K8sConstants) -> Self {
+        Self {
+            state: "Offline".to_string(),
+            transactions: 0,
+            local_url: format!("ws://{}:{}", crd.internal_host(), constants.port),
+            external_url: format!(
+                "ws://{}:{}",
+                crd.external_host(config, constants),
+                config.external_port
+            ),
+        }
+    }
 }
 
 impl HydraDoomNode {
@@ -185,6 +200,29 @@ impl HydraDoomNode {
                                 resources: None, // TODO: This should be parameterizable
                                 ..Default::default()
                             },
+                            Container {
+                                name: "sidecar".to_string(),
+                                image: Some(
+                                    self.spec
+                                        .sidecar_image
+                                        .clone()
+                                        .unwrap_or(config.sidecar_image.clone()),
+                                ),
+                                args: Some(vec![
+                                    "--host".to_string(),
+                                    "localhost".to_string(),
+                                    "--port".to_string(),
+                                    "0.0.0.0".to_string(),
+                                    constants.port.to_string(),
+                                ]),
+                                ports: Some(vec![ContainerPort {
+                                    name: Some("metrics".to_string()),
+                                    container_port: constants.metrics_port,
+                                    protocol: Some("TCP".to_string()),
+                                    ..Default::default()
+                                }]),
+                                ..Default::default()
+                            },
                             // Container {
                             //     name: "open-head".to_string(),
                             //     image: Some(self.spec.open_head_image.clone()),
@@ -236,16 +274,28 @@ impl HydraDoomNode {
             },
             spec: Some(ServiceSpec {
                 selector: Some(labels),
-                ports: Some(vec![ServicePort {
-                    port: constants.port,
-                    target_port: Some(
-                        k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(
-                            constants.port,
+                ports: Some(vec![
+                    ServicePort {
+                        port: constants.port,
+                        target_port: Some(
+                            k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(
+                                constants.port,
+                            ),
                         ),
-                    ),
-                    protocol: Some("TCP".to_string()),
-                    ..Default::default()
-                }]),
+                        protocol: Some("TCP".to_string()),
+                        ..Default::default()
+                    },
+                    ServicePort {
+                        port: constants.metrics_port,
+                        target_port: Some(
+                            k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(
+                                constants.metrics_port,
+                            ),
+                        ),
+                        protocol: Some("TCP".to_string()),
+                        ..Default::default()
+                    },
+                ]),
                 type_: Some("ClusterIP".to_string()),
                 ..Default::default()
             }),

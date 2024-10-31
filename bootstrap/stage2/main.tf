@@ -12,12 +12,16 @@ variable "image" {
   type = string
 }
 
-variable "hydra_pod_image" {
+variable "hydra_node_image" {
   type    = string
   default = "ghcr.io/cardano-scaling/hydra-node"
 }
 
-variable "hydra_pod_open_head_image" {
+variable "open_head_image" {
+  type = string
+}
+
+variable "sidecar_image" {
   type = string
 }
 

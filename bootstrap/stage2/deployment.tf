@@ -45,12 +45,17 @@ resource "kubernetes_deployment_v1" "operator" {
 
           env {
             name  = "IMAGE"
-            value = var.hydra_pod_image
+            value = var.hydra_node_image
           }
 
           env {
             name  = "OPEN_HEAD_IMAGE"
-            value = var.hydra_pod_open_head_image
+            value = var.open_head_image
+          }
+
+          env {
+            name  = "SIDECAR_IMAGE"
+            value = var.sidecar_image
           }
 
           env {

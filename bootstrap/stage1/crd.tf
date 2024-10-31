@@ -86,6 +86,10 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                     "seedInput" = {
                       "type" = "string"
                     }
+                    "sidecarImage" = {
+                      "nullable" = true
+                      "type" = "string"
+                    }
                   }
                   "required" = [
                     "commitInputs",
@@ -109,8 +113,7 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                       "type" = "string"
                     }
                     "transactions" = {
-                      "format" = "uint"
-                      "minimum" = 0
+                      "format" = "int64"
                       "type" = "integer"
                     }
                   }
