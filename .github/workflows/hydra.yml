@@ -1,12 +1,12 @@
-name: Sidecar
+name: Hydra
 
 on:
   push:
     branches:
       - "main"
     paths:
-      - ".github/workflows/sidecar.yml"
-      - "docker/dockerfile.sidecar"
+      - ".github/workflows/hydra.yml"
+      - "docker/dockerfile.hydra"
   workflow_dispatch:
     inputs:
       mumak_version:
@@ -20,7 +20,7 @@ jobs:
         include:
           - context: .
             file: docker/dockerfile.sidecar
-            endpoint: demeter-run/doom-patrol-metrics-exporter
+            endpoint: demeter-run/doom-patrol-hydra
 
     continue-on-error: true
     runs-on: ubuntu-latest

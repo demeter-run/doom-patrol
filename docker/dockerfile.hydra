@@ -1,19 +1,17 @@
 ARG RUST_VERSION=1.81.0
-ARG BIN=operator
 FROM rust:${RUST_VERSION}-slim-bullseye AS build
-ARG BIN
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y libssl-dev pkg-config git
 
-
-ARG HYDRA_CONTROL_PLANE_COMMIT=b8ba5686cd4e96ee9b0470b7a5bd69178efd52b5
-RUN git clone https://github.com/gonzalezzfelipe/hydra-control-plane.git
-RUN cd hydra-control-plane && git checkout fix/sidecar
+RUN git clone https://github.com/scarmuega/hydra-control-plane.git
+RUN cd hydra-control-plane && git checkout feat/k8s-integration
 
 WORKDIR /app/hydra-control-plane
 RUN cargo build --locked --release
 RUN cp ./target/release/metrics-exporter /bin/metrics-exporter
+RUN cp ./target/release/open-head /bin/open-head
+RUN cp ./target/release/control-plane /bin/control-plane
 
 FROM debian:bullseye-slim AS final
 
@@ -32,6 +30,8 @@ WORKDIR /home/app
 
 # Copy the executable from the "build" stage.
 COPY --from=build /bin/metrics-exporter /bin/metrics-exporter
+COPY --from=build /bin/open-head /bin/open-head
+COPY --from=build /bin/control-plane /bin/control-plane
 
 # Configure rocket to listen on all interfaces.
 ENV ROCKET_ADDRESS=0.0.0.0
@@ -40,5 +40,4 @@ ENV ROCKET_PORT=8000
 # Expose the port that the application listens on.
 EXPOSE 8000
 
-# What the container should run when it is started.
 CMD ["/bin/metrics-exporter"]
