@@ -218,7 +218,7 @@ impl HydraDoomNode {
                                 }]),
                                 volume_mounts: Some(vec![
                                     VolumeMount {
-                                        name: "initial_utxo".to_string(),
+                                        name: "initialutxo".to_string(),
                                         mount_path: constants.initial_utxo_config_dir.clone(),
                                         ..Default::default()
                                     },
@@ -291,7 +291,7 @@ impl HydraDoomNode {
                                 ..Default::default()
                             },
                             Volume {
-                                name: "initial_utxo".to_string(),
+                                name: "initialutxo".to_string(),
                                 config_map: Some(ConfigMapVolumeSource {
                                     name: constants.initial_utxo_config_dir.clone(),
                                     ..Default::default()
