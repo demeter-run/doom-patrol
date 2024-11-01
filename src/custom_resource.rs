@@ -39,12 +39,9 @@ pub static HYDRA_DOOM_NODE_FINALIZER: &str = "hydradoomnode/finalizer";
     "#)]
 #[serde(rename_all = "camelCase")]
 pub struct HydraDoomNodeSpec {
-    pub image: Option<String>,
     pub offline: Option<bool>,
     pub initial_utxo_address: Option<String>,
-    pub open_head_image: Option<String>,
-    pub sidecar_image: Option<String>,
-    pub configmap: Option<String>,
+    // Open head
     pub network_id: u8,
     pub seed_input: String,
     pub participant: String,
@@ -172,7 +169,7 @@ impl HydraDoomNode {
                     spec: Some(PodSpec {
                         init_containers: Some(vec![Container {
                             name: "init".to_string(),
-                            image: Some(self.spec.image.clone().unwrap_or(config.image.clone())),
+                            image: Some(config.image.clone()),
                             args: Some(vec![
                                 "gen-hydra-key".to_string(),
                                 "--output-file".to_string(),
@@ -188,9 +185,7 @@ impl HydraDoomNode {
                         containers: vec![
                             Container {
                                 name: "main".to_string(),
-                                image: Some(
-                                    self.spec.image.clone().unwrap_or(config.image.clone()),
-                                ),
+                                image: Some(config.image.clone()),
                                 args: Some(vec![
                                     "offline".to_string(),
                                     "--host".to_string(),
@@ -238,12 +233,7 @@ impl HydraDoomNode {
                             },
                             Container {
                                 name: "sidecar".to_string(),
-                                image: Some(
-                                    self.spec
-                                        .sidecar_image
-                                        .clone()
-                                        .unwrap_or(config.sidecar_image.clone()),
-                                ),
+                                image: Some(config.sidecar_image.clone()),
                                 args: Some(vec![
                                     "metrics-exporter".to_string(),
                                     "--host".to_string(),
@@ -281,11 +271,7 @@ impl HydraDoomNode {
                             Volume {
                                 name: "config".to_string(),
                                 config_map: Some(ConfigMapVolumeSource {
-                                    name: self
-                                        .spec
-                                        .configmap
-                                        .clone()
-                                        .unwrap_or(config.configmap.clone()),
+                                    name: config.configmap.clone(),
                                     ..Default::default()
                                 }),
                                 ..Default::default()

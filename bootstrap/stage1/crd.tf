@@ -60,14 +60,6 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                       }
                       "type" = "array"
                     }
-                    "configmap" = {
-                      "nullable" = true
-                      "type" = "string"
-                    }
-                    "image" = {
-                      "nullable" = true
-                      "type" = "string"
-                    }
                     "initialUtxoAddress" = {
                       "nullable" = true
                       "type" = "string"
@@ -81,10 +73,6 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                       "nullable" = true
                       "type" = "boolean"
                     }
-                    "openHeadImage" = {
-                      "nullable" = true
-                      "type" = "string"
-                    }
                     "participant" = {
                       "type" = "string"
                     }
@@ -92,10 +80,6 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                       "type" = "string"
                     }
                     "seedInput" = {
-                      "type" = "string"
-                    }
-                    "sidecarImage" = {
-                      "nullable" = true
                       "type" = "string"
                     }
                   }
