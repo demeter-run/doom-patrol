@@ -1,6 +1,6 @@
 locals {
   namespace      = "hydra-doom"
-  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-78bf230"
+  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-781e941"
   # operator_image = "doom-patrol-operator:local"
 }
 
