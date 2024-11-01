@@ -68,10 +68,18 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                       "nullable" = true
                       "type" = "string"
                     }
+                    "initialUtxoAddress" = {
+                      "nullable" = true
+                      "type" = "string"
+                    }
                     "networkId" = {
                       "format" = "uint8"
                       "minimum" = 0
                       "type" = "integer"
+                    }
+                    "offline" = {
+                      "nullable" = true
+                      "type" = "boolean"
                     }
                     "openHeadImage" = {
                       "nullable" = true

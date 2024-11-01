@@ -3,9 +3,9 @@ resource "kubernetes_deployment_v1" "operator" {
 
   metadata {
     namespace = var.namespace
-    name      = local.component
+    name      = local.operator_component
     labels = {
-      role = local.component
+      role = local.operator_component
     }
   }
 
@@ -19,20 +19,20 @@ resource "kubernetes_deployment_v1" "operator" {
 
     selector {
       match_labels = {
-        role = local.component
+        role = local.operator_component
       }
     }
 
     template {
       metadata {
         labels = {
-          role = local.component
+          role = local.operator_component
         }
       }
 
       spec {
         container {
-          image = var.image
+          image = var.operator_image
           name  = "main"
 
           env {

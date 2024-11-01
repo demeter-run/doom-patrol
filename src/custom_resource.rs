@@ -155,7 +155,7 @@ impl HydraDoomNode {
 
         Deployment {
             metadata: ObjectMeta {
-                name: Some(name),
+                name: Some(name.clone()),
                 ..Default::default()
             },
             spec: Some(DeploymentSpec {
@@ -293,7 +293,7 @@ impl HydraDoomNode {
                             Volume {
                                 name: "initialutxo".to_string(),
                                 config_map: Some(ConfigMapVolumeSource {
-                                    name: constants.initial_utxo_config_dir.clone(),
+                                    name: name.clone(),
                                     ..Default::default()
                                 }),
                                 ..Default::default()

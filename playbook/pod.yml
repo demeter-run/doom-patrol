@@ -4,6 +4,8 @@ metadata:
   name: 5py7r5
   namespace: hydra-doom
 spec:
+  offline: true
+  initialUtxoAddress: addr_test1vphyqcvtwdpuwlmslna29ymaua8e9cswlmllt9wkey345cqgtzv2j
   networkId: 1
   seedInput: foo
   participant: foo

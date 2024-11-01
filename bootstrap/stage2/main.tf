@@ -1,6 +1,7 @@
 locals {
-  component = "operator"
-  configmap = "hydra-pod-config"
+  operator_component      = "operator"
+  configmap               = "hydra-pod-config"
+  control_plane_component = "control-plane"
 }
 
 variable "namespace" {
@@ -8,7 +9,7 @@ variable "namespace" {
   default = "hydra-doom"
 }
 
-variable "image" {
+variable "operator_image" {
   type = string
 }
 
@@ -22,6 +23,10 @@ variable "open_head_image" {
 }
 
 variable "sidecar_image" {
+  type = string
+}
+
+variable "control_plane_image" {
   type = string
 }
 
@@ -48,6 +53,29 @@ variable "tolerations" {
 }
 
 variable "resources" {
+  type = object({
+    limits = object({
+      cpu    = optional(string)
+      memory = string
+    })
+    requests = object({
+      cpu    = string
+      memory = string
+    })
+  })
+  default = {
+    requests = {
+      cpu    = "500m"
+      memory = "512Mi"
+    }
+    limits = {
+      cpu    = "2"
+      memory = "512Mi"
+    }
+  }
+}
+
+variable "control_plane_resources" {
   type = object({
     limits = object({
       cpu    = optional(string)

@@ -1,6 +1,6 @@
 locals {
   namespace      = "hydra-doom"
-  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-f06d308"
+  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-78bf230"
   # operator_image = "doom-patrol-operator:local"
 }
 
@@ -46,11 +46,12 @@ module "stage2" {
   source     = "../bootstrap/stage2"
   depends_on = [module.stage1]
 
-  namespace       = local.namespace
-  external_domain = "external.domain"
-  image           = local.operator_image
-  open_head_image = ""
-  sidecar_image   = "ghcr.io/demeter-run/doom-patrol-metrics-exporter:a5406f8180a77474c06e44f95619cada183bb8fe"
-  blockfrost_key  = ""
-  external_port   = 80
+  namespace           = local.namespace
+  external_domain     = "us-east-1.hydra-doom.sundae.fi"
+  operator_image      = local.operator_image
+  sidecar_image       = "ghcr.io/demeter-run/doom-patrol-metrics-exporter:a5406f8180a77474c06e44f95619cada183bb8fe"
+  open_head_image     = "ghcr.io/demeter-run/doom-patrol-hydra:0ee2f6b6d38e500097d992820e0089ead7cb10bc"
+  control_plane_image = "ghcr.io/demeter-run/doom-patrol-hydra:0ee2f6b6d38e500097d992820e0089ead7cb10bc"
+  blockfrost_key      = ""
+  external_port       = 80
 }
