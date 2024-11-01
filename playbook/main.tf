@@ -1,13 +1,7 @@
-# Terraform file for local development
-#
-# To test run this on a local machine run the following:
-# 1. kind create cluster --name k8scluster
-# 2. docker build -t doom-patrol-operator:local .. 
-# 3. kind load docker-image doom-patrol-operator:local --name k8scluster
-# 4. cd playbook && tf apply
 locals {
   namespace      = "hydra-doom"
-  operator_image = "doom-patrol-operator:local"
+  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-f06d308"
+  # operator_image = "doom-patrol-operator:local"
 }
 
 terraform {
@@ -23,9 +17,20 @@ terraform {
 }
 
 provider "kubernetes" {
-  config_path    = "~/.kube/config"
-  config_context = "kind-k8scluster"
+  config_path = "~/.kube/config"
+  # config_context = "kind-k8scluster"
+  config_context = "felipe@txpipe.io@hydra-doom-dev-cluster.us-east-1.eksctl.io"
 }
+
+provider "helm" {
+  kubernetes {
+    config_path = "~/.kube/config"
+    # config_context = "kind-k8scluster"
+    config_context = "felipe@txpipe.io@hydra-doom-dev-cluster.us-east-1.eksctl.io"
+  }
+}
+
+
 
 resource "kubernetes_namespace" "namespace" {
   metadata {
@@ -41,10 +46,11 @@ module "stage2" {
   source     = "../bootstrap/stage2"
   depends_on = [module.stage1]
 
-  namespace                 = local.namespace
-  external_domain           = "external.domain"
-  image                     = local.operator_image
-  hydra_pod_open_head_image = ""
-  blockfrost_key            = ""
-  external_port             = 4001
+  namespace       = local.namespace
+  external_domain = "external.domain"
+  image           = local.operator_image
+  open_head_image = ""
+  sidecar_image   = "ghcr.io/demeter-run/doom-patrol-metrics-exporter:a5406f8180a77474c06e44f95619cada183bb8fe"
+  blockfrost_key  = ""
+  external_port   = 80
 }

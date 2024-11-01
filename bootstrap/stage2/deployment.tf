@@ -5,8 +5,7 @@ resource "kubernetes_deployment_v1" "operator" {
     namespace = var.namespace
     name      = local.component
     labels = {
-      role     = local.component
-      "run-on" = "fargate"
+      role = local.component
     }
   }
 
@@ -20,16 +19,14 @@ resource "kubernetes_deployment_v1" "operator" {
 
     selector {
       match_labels = {
-        role     = local.component
-        "run-on" = "fargate"
+        role = local.component
       }
     }
 
     template {
       metadata {
         labels = {
-          role     = local.component
-          "run-on" = "fargate"
+          role = local.component
         }
       }
 
