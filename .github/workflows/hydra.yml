@@ -19,7 +19,7 @@ jobs:
       matrix:
         include:
           - context: .
-            file: docker/dockerfile.sidecar
+            file: docker/dockerfile.hydra
             endpoint: demeter-run/doom-patrol-hydra
 
     continue-on-error: true
