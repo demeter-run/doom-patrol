@@ -344,13 +344,14 @@ impl K8sContext {
 
     async fn patch_statuses(&self) -> anyhow::Result<()> {
         let api: Api<HydraDoomNode> = Api::all(self.client.clone());
-
         let crds = api.list(&ListParams::default()).await?;
 
         let mut awaitables = vec![];
         for crd in &crds {
             awaitables.push(async {
                 let name = crd.name_any();
+                let api: Api<HydraDoomNode> =
+                    Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
                 if let Err(err) = api
                     .patch_status(
                         &name,
@@ -359,7 +360,10 @@ impl K8sContext {
                     )
                     .await
                 {
-                    warn!(err = err.to_string(), "Failed to status for CRD.");
+                    warn!(
+                        err = err.to_string(),
+                        "Failed to update status for CRD {}.", name
+                    );
                 };
             })
         }
