@@ -1,5 +1,9 @@
 use anyhow::bail;
-use k8s_openapi::api::{apps::v1::Deployment, core::v1::Service, networking::v1::Ingress};
+use k8s_openapi::api::{
+    apps::v1::Deployment,
+    core::v1::{ConfigMap, Service},
+    networking::v1::Ingress,
+};
 use kube::{
     api::{DeleteParams, ListParams, Patch, PatchParams},
     runtime::controller::Action,
@@ -43,6 +47,7 @@ impl From<HydraDoomNodeState> for String {
 
 pub struct K8sConstants {
     pub config_dir: String,
+    pub initial_utxo_config_dir: String,
     pub data_dir: String,
     pub persistence_dir: String,
     pub node_port: i32,
@@ -58,6 +63,7 @@ impl Default for K8sConstants {
     fn default() -> Self {
         Self {
             config_dir: "/etc/config".to_string(),
+            initial_utxo_config_dir: "/etc/initial_utxo_config".to_string(),
             data_dir: "/var/data".to_string(),
             persistence_dir: "/var/persistence".to_string(),
             node_port: 5001,
@@ -117,31 +123,11 @@ impl K8sContext {
             self.patch_deployment(crd),
             self.patch_service(crd),
             self.patch_ingress(crd),
+            self.patch_configmap(crd),
             self.patch_crd(crd)
         ) {
-            (Ok(_), Ok(_), Ok(_), Ok(_)) => (),
-            (Err(_), Ok(_), Ok(_), Ok(_)) => {
-                self.remove_service(crd).await?;
-                self.remove_ingress(crd).await?;
-            }
-            (Ok(_), Err(_), Ok(_), Ok(_)) => {
-                self.remove_deployment(crd).await?;
-                self.remove_ingress(crd).await?;
-            }
-            (Ok(_), Ok(_), Err(_), Ok(_)) => {
-                self.remove_deployment(crd).await?;
-                self.remove_service(crd).await?;
-            }
-            (Err(_), Err(_), Ok(_), Ok(_)) => {
-                self.remove_ingress(crd).await?;
-            }
-            (Err(_), Ok(_), Err(_), Ok(_)) => {
-                self.remove_service(crd).await?;
-            }
-            (Ok(_), Err(_), Err(_), Ok(_)) => {
-                self.remove_deployment(crd).await?;
-            }
-            _ => bail!("Failed to create resources"),
+            (Ok(_), Ok(_), Ok(_), Ok(_), Ok(_)) => (),
+            _ => bail!("Failed to apply patch for components."),
         };
 
         Ok(())
@@ -151,9 +137,10 @@ impl K8sContext {
         match tokio::join!(
             self.remove_deployment(crd),
             self.remove_service(crd),
-            self.remove_ingress(crd)
+            self.remove_ingress(crd),
+            self.remove_configmap(crd)
         ) {
-            (Ok(_), Ok(_), Ok(_)) => Ok(()),
+            (Ok(_), Ok(_), Ok(_), Ok(_)) => Ok(()),
             _ => bail!("Failed to remove resources"),
         }
     }
@@ -176,6 +163,33 @@ impl K8sContext {
             error!(err = err.to_string(), "Failed to patch CRD.");
             anyhow::Error::from(err)
         })
+    }
+
+    async fn patch_configmap(&self, crd: &HydraDoomNode) -> anyhow::Result<ConfigMap> {
+        let api: Api<ConfigMap> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
+
+        // Create or patch the configmap
+        api.patch(
+            &crd.internal_name(),
+            &PatchParams::apply("hydra-doom-pod-controller"),
+            &Patch::Apply(&crd.configmap(&self.config, &self.constants)),
+        )
+        .await
+        .map_err(|err| {
+            error!(err = err.to_string(), "Failed to create configmap.");
+            err.into()
+        })
+    }
+
+    async fn remove_configmap(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
+        let api: Api<ConfigMap> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
+        match api
+            .delete(&crd.internal_name(), &DeleteParams::default())
+            .await
+        {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
     }
 
     async fn patch_deployment(&self, crd: &HydraDoomNode) -> anyhow::Result<Deployment> {

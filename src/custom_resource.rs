@@ -1,7 +1,7 @@
 use k8s_openapi::api::{
     apps::v1::{Deployment, DeploymentSpec},
     core::v1::{
-        ConfigMapVolumeSource, Container, ContainerPort, EmptyDirVolumeSource, PodSpec,
+        ConfigMap, ConfigMapVolumeSource, Container, ContainerPort, EmptyDirVolumeSource, PodSpec,
         PodTemplateSpec, Service, ServicePort, ServiceSpec, Volume, VolumeMount,
     },
     networking::v1::{
@@ -40,6 +40,8 @@ pub static HYDRA_DOOM_NODE_FINALIZER: &str = "hydradoomnode/finalizer";
 #[serde(rename_all = "camelCase")]
 pub struct HydraDoomNodeSpec {
     pub image: Option<String>,
+    pub offline: Option<bool>,
+    pub initial_utxo_address: Option<String>,
     pub open_head_image: Option<String>,
     pub sidecar_image: Option<String>,
     pub configmap: Option<String>,
@@ -97,6 +99,35 @@ impl HydraDoomNode {
 
     pub fn external_host(&self, config: &Config, _constants: &K8sConstants) -> String {
         format!("{}.{}", self.name_any(), config.external_domain,)
+    }
+
+    pub fn configmap(&self, _config: &Config, _constants: &K8sConstants) -> ConfigMap {
+        let name = self.internal_name();
+
+        ConfigMap {
+            metadata: ObjectMeta {
+                name: Some(name),
+                ..Default::default()
+            },
+            data: Some(BTreeMap::from([(
+                "utxo.json".to_string(),
+                format!(
+                    r#"{{
+                    "0000000000000000000000000000000000000000000000000000000000000000#0": {{
+                        "address": "{}",
+                        "value": {{
+                            "lovelace": 1000000000
+                        }}
+                    }}
+                }}"#,
+                    self.spec.initial_utxo_address.clone().unwrap_or(
+                        "addr_test1vphyqcvtwdpuwlmslna29ymaua8e9cswlmllt9wkey345cqgtzv2j"
+                            .to_string()
+                    )
+                ),
+            )])),
+            ..Default::default()
+        }
     }
 
     pub fn deployment(&self, config: &Config, constants: &K8sConstants) -> Deployment {
@@ -175,7 +206,7 @@ impl HydraDoomNode {
                                     "--ledger-protocol-parameters".to_string(),
                                     format!("{}/protocol-parameters.json", constants.config_dir),
                                     "--initial-utxo".to_string(),
-                                    format!("{}/utxo.json", constants.config_dir),
+                                    format!("{}/utxo.json", constants.initial_utxo_config_dir),
                                     "--persistence-dir".to_string(),
                                     format!("{}/hydra-state", constants.persistence_dir),
                                 ]),
@@ -186,6 +217,11 @@ impl HydraDoomNode {
                                     ..Default::default()
                                 }]),
                                 volume_mounts: Some(vec![
+                                    VolumeMount {
+                                        name: "initial_utxo".to_string(),
+                                        mount_path: constants.initial_utxo_config_dir.clone(),
+                                        ..Default::default()
+                                    },
                                     VolumeMount {
                                         name: "config".to_string(),
                                         mount_path: constants.config_dir.clone(),
@@ -250,6 +286,14 @@ impl HydraDoomNode {
                                         .configmap
                                         .clone()
                                         .unwrap_or(config.configmap.clone()),
+                                    ..Default::default()
+                                }),
+                                ..Default::default()
+                            },
+                            Volume {
+                                name: "initial_utxo".to_string(),
+                                config_map: Some(ConfigMapVolumeSource {
+                                    name: constants.initial_utxo_config_dir.clone(),
                                     ..Default::default()
                                 }),
                                 ..Default::default()
