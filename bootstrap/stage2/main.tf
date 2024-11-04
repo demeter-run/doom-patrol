@@ -1,6 +1,7 @@
 locals {
   operator_component      = "operator"
   configmap               = "hydra-pod-config"
+  secret                  = "hydra-pod-admin-key"
   control_plane_component = "control-plane"
 }
 

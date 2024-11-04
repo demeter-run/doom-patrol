@@ -4,7 +4,7 @@ result*
 .envrc
 .direnv
 # runtime
-protocol-parameters.json
+# protocol-parameters.json
 utxo.json
 *.vk
 *.sk

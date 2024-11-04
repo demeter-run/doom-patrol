@@ -47,6 +47,7 @@ impl From<HydraDoomNodeState> for String {
 
 pub struct K8sConstants {
     pub config_dir: String,
+    pub secret_dir: String,
     pub initial_utxo_config_dir: String,
     pub data_dir: String,
     pub persistence_dir: String,
@@ -63,6 +64,7 @@ impl Default for K8sConstants {
     fn default() -> Self {
         Self {
             config_dir: "/etc/config".to_string(),
+            secret_dir: "/var/secret".to_string(),
             initial_utxo_config_dir: "/etc/initial_utxo_config".to_string(),
             data_dir: "/var/data".to_string(),
             persistence_dir: "/var/persistence".to_string(),

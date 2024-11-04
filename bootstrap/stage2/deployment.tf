@@ -61,6 +61,11 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
+            name  = "SECRET"
+            value = local.secret
+          }
+
+          env {
             name  = "BLOCKFROST_KEY"
             value = var.blockfrost_key
           }

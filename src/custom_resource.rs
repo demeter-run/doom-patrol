@@ -140,7 +140,7 @@ impl HydraDoomNode {
             "--party".to_string(),
             self.spec.party.clone(),
             "--cardano-key-file".to_string(),
-            format!("{}/admin.sk", constants.config_dir),
+            format!("{}/admin.sk", constants.secret_dir),
             "--blockfrost-key".to_string(),
             self.spec
                 .blockfrost_key
@@ -253,11 +253,18 @@ impl HydraDoomNode {
                             //     name: "open-head".to_string(),
                             //     image: Some(self.spec.open_head_image.clone()),
                             //     args: Some(open_head_args),
-                            //     volume_mounts: Some(vec![VolumeMount {
-                            //         name: "config".to_string(),
-                            //         mount_path: constants.config_dir.clone(),
-                            //         ..Default::default()
-                            //     }]),
+                            //     volume_mounts: Some(vec![
+                            //         VolumeMount {
+                            //             name: "config".to_string(),
+                            //             mount_path: constants.config_dir.clone(),
+                            //             ..Default::default()
+                            //         },
+                            //         VolumeMount {
+                            //             name: "secret".to_string(),
+                            //             mount_path: constants.secret_dir.clone(),
+                            //             ..Default::default()
+                            //         },
+                            //     ]),
                             //     resources: None, // TODO: Parametrize this
                             //     ..Default::default()
                             // },

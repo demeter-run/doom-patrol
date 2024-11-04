@@ -10,7 +10,7 @@ metadata:
 
 managedNodeGroups:
   # Consistent
-  - name: be-ad-x86-az1
+  - name: be-adm-x86-az1
     tags: 
       sundae-labs:cost-allocation:Service: hydra-doom
     labels:
@@ -18,7 +18,7 @@ managedNodeGroups:
       hydra.doom/compute-profile: admin
       hydra.doom/compute-arch: x86
       hydra.doom/availability-zone: az1
-    instanceType: t3a.medium
+    instanceTypes: [ t3a.medium, t3.medium ]
     minSize: 0
     maxSize: 2
     desiredCapacity: 1
