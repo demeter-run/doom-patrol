@@ -1,12 +1,14 @@
 locals {
   namespace      = "hydra-doom"
-  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-781e941"
+  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-aa3fdda"
   # operator_image = "doom-patrol-operator:local"
 }
 
 terraform {
-  backend "local" {
-    path = "local.tfstate"
+  backend "s3" {
+    bucket = "hydra-doom-tf"
+    key    = "clusters/hydra-doom-dev-cluster/tfstate"
+    region = "us-east-1"
   }
   required_providers {
     kubernetes = {
@@ -18,19 +20,15 @@ terraform {
 
 provider "kubernetes" {
   config_path = "~/.kube/config"
-  # config_context = "kind-k8scluster"
-  config_context = "felipe@txpipe.io@hydra-doom-dev-cluster.us-east-1.eksctl.io"
+  config_context = "hydra-doom-dev-cluster"
 }
 
 provider "helm" {
   kubernetes {
     config_path = "~/.kube/config"
-    # config_context = "kind-k8scluster"
-    config_context = "felipe@txpipe.io@hydra-doom-dev-cluster.us-east-1.eksctl.io"
+    config_context = "hydra-doom-dev-cluster"
   }
 }
-
-
 
 resource "kubernetes_namespace" "namespace" {
   metadata {
@@ -51,7 +49,7 @@ module "stage2" {
   operator_image      = local.operator_image
   sidecar_image       = "ghcr.io/demeter-run/doom-patrol-metrics-exporter:a5406f8180a77474c06e44f95619cada183bb8fe"
   open_head_image     = "ghcr.io/demeter-run/doom-patrol-hydra:0ee2f6b6d38e500097d992820e0089ead7cb10bc"
-  control_plane_image = "ghcr.io/demeter-run/doom-patrol-hydra:0ee2f6b6d38e500097d992820e0089ead7cb10bc"
+  control_plane_image = "ghcr.io/demeter-run/doom-patrol-hydra:c4d9d80ea42a202408cf062193d2a675a42f432f"
   blockfrost_key      = ""
   external_port       = 80
 }
