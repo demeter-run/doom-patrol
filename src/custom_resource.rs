@@ -92,7 +92,7 @@ impl HydraDoomNode {
     }
 
     pub fn external_host(&self, config: &Config, _constants: &K8sConstants) -> String {
-        format!("{}.{}", self.name_any(), config.external_domain,)
+        format!("{}.{}", self.name_any(), config.external_domain)
     }
 
     pub fn configmap(&self, config: &Config, _constants: &K8sConstants) -> ConfigMap {
@@ -157,8 +157,6 @@ impl HydraDoomNode {
                 self.name_any(),
                 "--cardano-signing-key".to_string(),
                 format!("{}/admin.sk", constants.secret_dir),
-                "--hydra-signing-key".to_string(),
-                format!("{}/hydra.sk", constants.data_dir),
                 "--hydra-scripts-tx-id".to_string(),
                 config.hydra_scripts_tx_id.clone(),
                 "--testnet-magic".to_string(),
@@ -166,6 +164,7 @@ impl HydraDoomNode {
                 "--node-socket".to_string(),
                 constants.socket_path.clone(),
             ];
+            aux.extend(main_container_common_args);
             if let Some(start_chain_from) = &self.spec.start_chain_from {
                 aux.push("--start-chain-from".to_string());
                 aux.push(start_chain_from.clone());
@@ -201,6 +200,11 @@ impl HydraDoomNode {
                         ..Default::default()
                     },
                     VolumeMount {
+                        name: "secret".to_string(),
+                        mount_path: constants.secret_dir.clone(),
+                        ..Default::default()
+                    },
+                    VolumeMount {
                         name: "ipc".to_string(),
                         mount_path: constants.socat_dir.clone(),
                         ..Default::default()
@@ -232,13 +236,14 @@ impl HydraDoomNode {
         // Offline is optional. If undefined, the node is presumed to be online.
         if !self.spec.offline.unwrap_or(false) {
             let mut open_head_args = vec![
+                "open-head".to_string(),
                 "--network-id".to_string(),
                 self.spec.network_id.unwrap_or(0).to_string(),
                 "--seed-input".to_string(),
                 self.spec.seed_input.clone(),
                 "--participant".to_string(),
                 config.admin_addr.clone(),
-                "--party-verification-key-file".to_string(),
+                "--party-verification-file".to_string(),
                 format!("{}/hydra.vk", constants.data_dir),
                 "--cardano-key-file".to_string(),
                 format!("{}/admin.sk", constants.secret_dir),
