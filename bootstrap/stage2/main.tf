@@ -2,6 +2,7 @@ locals {
   operator_component      = "operator"
   configmap               = "hydra-pod-config"
   secret                  = "hydra-pod-admin-key"
+  secret_mount_path       = "/var/secret"
   control_plane_component = "control-plane"
 }
 
@@ -41,6 +42,15 @@ variable "external_domain" {
 
 variable "external_port" {
   type = number
+}
+
+variable "admin_key_path" {
+  type = string
+}
+
+variable "admin_addr" {
+  type        = string
+  description = "Must be consistent with admin key, calculated using cardano cli."
 }
 
 variable "tolerations" {

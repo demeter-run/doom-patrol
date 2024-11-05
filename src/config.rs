@@ -19,6 +19,7 @@ pub struct Config {
     pub blockfrost_key: String,
     pub external_domain: String,
     pub external_port: String,
+    pub offline_initial_utxo_address: String,
 }
 
 impl Config {
@@ -32,6 +33,8 @@ impl Config {
             blockfrost_key: env::var("BLOCKFROST_KEY").expect("Missing BLOCKFROST_KEY env var"),
             external_domain: env::var("EXTERNAL_DOMAIN").expect("Missing EXTERNAL_DOMAIN env var."),
             external_port: env::var("EXTERNAL_PORT").expect("Missing EXTERNAL_PORT env var."),
+            offline_initial_utxo_address: env::var("OFFLINE_INITIAL_UTXO_ADDRESS")
+                .expect("Missing OFFLINE_INITIAL_UTXO_ADDRESS env var."),
         }
     }
 }

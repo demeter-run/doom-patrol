@@ -40,7 +40,6 @@ pub static HYDRA_DOOM_NODE_FINALIZER: &str = "hydradoomnode/finalizer";
 #[serde(rename_all = "camelCase")]
 pub struct HydraDoomNodeSpec {
     pub offline: Option<bool>,
-    pub initial_utxo_address: Option<String>,
     // Open head
     pub network_id: u8,
     pub seed_input: String,
@@ -98,7 +97,7 @@ impl HydraDoomNode {
         format!("{}.{}", self.name_any(), config.external_domain,)
     }
 
-    pub fn configmap(&self, _config: &Config, _constants: &K8sConstants) -> ConfigMap {
+    pub fn configmap(&self, config: &Config, _constants: &K8sConstants) -> ConfigMap {
         let name = self.internal_name();
 
         ConfigMap {
@@ -117,10 +116,7 @@ impl HydraDoomNode {
                         }}
                     }}
                 }}"#,
-                    self.spec.initial_utxo_address.clone().unwrap_or(
-                        "addr_test1vphyqcvtwdpuwlmslna29ymaua8e9cswlmllt9wkey345cqgtzv2j"
-                            .to_string()
-                    )
+                    config.offline_initial_utxo_address.clone()
                 ),
             )])),
             ..Default::default()

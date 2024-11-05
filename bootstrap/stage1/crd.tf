@@ -60,10 +60,6 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                       }
                       "type" = "array"
                     }
-                    "initialUtxoAddress" = {
-                      "nullable" = true
-                      "type"     = "string"
-                    }
                     "networkId" = {
                       "format"  = "uint8"
                       "minimum" = 0

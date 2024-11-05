@@ -80,6 +80,11 @@ resource "kubernetes_deployment_v1" "operator" {
             value = var.external_port
           }
 
+          env {
+            name  = "OFFLINE_INITIAL_UTXO_ADDRESS"
+            value = var.admin_addr
+          }
+
           resources {
             limits = {
               cpu    = var.resources.limits.cpu

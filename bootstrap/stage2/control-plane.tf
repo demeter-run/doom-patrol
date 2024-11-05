@@ -58,6 +58,16 @@ resource "kubernetes_deployment_v1" "control_plane" {
             value = 8000
           }
 
+          env {
+            name  = "ROCKET_ADMIN_KEY_FILE"
+            value = "${local.secret_mount_path}/admin.sk"
+          }
+
+          volume_mount {
+            name       = "secret"
+            mount_path = local.secret_mount_path
+          }
+
           resources {
             limits = {
               cpu    = var.control_plane_resources.limits.cpu
@@ -73,6 +83,13 @@ resource "kubernetes_deployment_v1" "control_plane" {
             name           = "api"
             container_port = 8000
             protocol       = "TCP"
+          }
+        }
+
+        volume {
+          name = "secret"
+          config_map {
+            name = local.secret
           }
         }
 
