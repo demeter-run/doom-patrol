@@ -14,7 +14,7 @@ RUN cp ./target/release/open-head /bin/open-head
 RUN cp ./target/release/control-plane /bin/control-plane
 
 FROM debian:bullseye-slim AS final
-RUN apt-get update && apt-get install -y ca-certificates
+RUN apt-get update && apt-get install -y ca-certificates curl
 WORKDIR /home/app
 
 # Copy the executable from the "build" stage.
