@@ -3,7 +3,6 @@ FROM rust:${RUST_VERSION}-slim-bullseye AS build
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y libssl-dev pkg-config git
-
 RUN git clone https://github.com/gonzalezzfelipe/hydra-control-plane.git
 RUN cd hydra-control-plane && git checkout chore/use-hydra-vk-instead-of-bytes
 
