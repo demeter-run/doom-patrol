@@ -85,6 +85,16 @@ resource "kubernetes_deployment_v1" "operator" {
             value = var.admin_addr
           }
 
+          env {
+            name  = "HYDRA_SCRIPTS_TX_ID"
+            value = var.hydra_scripts_tx_id
+          }
+
+          env {
+            name  = "DMTR_NODE_PORT_AUTHENTICATED_URL"
+            value = var.dmtr_node_port_authenticated_url
+          }
+
           resources {
             limits = {
               cpu    = var.resources.limits.cpu

@@ -53,6 +53,14 @@ variable "admin_addr" {
   description = "Must be consistent with admin key, calculated using cardano cli."
 }
 
+variable "hydra_scripts_tx_id" {
+  type = string
+}
+
+variable "dmtr_node_port_authenticated_url" {
+  type = string
+}
+
 variable "tolerations" {
   type = list(object({
     effect   = string

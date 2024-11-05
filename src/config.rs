@@ -19,7 +19,9 @@ pub struct Config {
     pub blockfrost_key: String,
     pub external_domain: String,
     pub external_port: String,
-    pub offline_initial_utxo_address: String,
+    pub admin_addr: String,
+    pub hydra_scripts_tx_id: String,
+    pub dmtr_node_port_authenticated_url: String,
 }
 
 impl Config {
@@ -33,8 +35,11 @@ impl Config {
             blockfrost_key: env::var("BLOCKFROST_KEY").expect("Missing BLOCKFROST_KEY env var"),
             external_domain: env::var("EXTERNAL_DOMAIN").expect("Missing EXTERNAL_DOMAIN env var."),
             external_port: env::var("EXTERNAL_PORT").expect("Missing EXTERNAL_PORT env var."),
-            offline_initial_utxo_address: env::var("OFFLINE_INITIAL_UTXO_ADDRESS")
-                .expect("Missing OFFLINE_INITIAL_UTXO_ADDRESS env var."),
+            admin_addr: env::var("ADMIN_ADDR").expect("Missing ADMIN_ADDR env var."),
+            hydra_scripts_tx_id: env::var("HYDRA_SCRIPTS_TX_ID")
+                .expect("Missing HYDRA_SCRIPTS_TX_ID env var."),
+            dmtr_node_port_authenticated_url: env::var("DMTR_NODE_PORT_AUTHENTICATED_URL")
+                .expect("Missing DMTR_NODE_PORT_AUTHENTICATED_URL env var."),
         }
     }
 }

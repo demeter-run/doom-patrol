@@ -2,7 +2,8 @@ use k8s_openapi::api::{
     apps::v1::{Deployment, DeploymentSpec},
     core::v1::{
         ConfigMap, ConfigMapVolumeSource, Container, ContainerPort, EmptyDirVolumeSource, PodSpec,
-        PodTemplateSpec, Service, ServicePort, ServiceSpec, Volume, VolumeMount,
+        PodTemplateSpec, SecretVolumeSource, SecurityContext, Service, ServicePort, ServiceSpec,
+        Volume, VolumeMount,
     },
     networking::v1::{
         HTTPIngressPath, HTTPIngressRuleValue, Ingress, IngressBackend, IngressRule,
@@ -40,13 +41,10 @@ pub static HYDRA_DOOM_NODE_FINALIZER: &str = "hydradoomnode/finalizer";
 #[serde(rename_all = "camelCase")]
 pub struct HydraDoomNodeSpec {
     pub offline: Option<bool>,
-    // Open head
-    pub network_id: u8,
+    pub network_id: Option<u8>,
     pub seed_input: String,
-    pub participant: String,
-    pub party: String,
     pub commit_inputs: Vec<String>,
-    pub blockfrost_key: Option<String>,
+    pub start_chain_from: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Clone, Default, Debug, JsonSchema)]
@@ -116,7 +114,7 @@ impl HydraDoomNode {
                         }}
                     }}
                 }}"#,
-                    config.offline_initial_utxo_address.clone()
+                    config.admin_addr.clone()
                 ),
             )])),
             ..Default::default()
@@ -126,25 +124,180 @@ impl HydraDoomNode {
     pub fn deployment(&self, config: &Config, constants: &K8sConstants) -> Deployment {
         let name = self.internal_name();
         let labels = self.internal_labels();
-        let mut open_head_args = vec![
-            "--network-id".to_string(),
-            self.spec.network_id.to_string(),
-            "--seed-input".to_string(),
-            self.spec.seed_input.clone(),
-            "--participant".to_string(),
-            self.spec.participant.clone(),
-            "--party".to_string(),
-            self.spec.party.clone(),
-            "--cardano-key-file".to_string(),
-            format!("{}/admin.sk", constants.secret_dir),
-            "--blockfrost-key".to_string(),
-            self.spec
-                .blockfrost_key
-                .clone()
-                .unwrap_or(config.blockfrost_key.clone()),
-            "--commit-inputs".to_string(),
+
+        // Common deployment parts:
+        let main_container_common_args = vec![
+            "--host".to_string(),
+            "0.0.0.0".to_string(),
+            "--api-host".to_string(),
+            "0.0.0.0".to_string(),
+            "--port".to_string(),
+            "5001".to_string(),
+            "--api-port".to_string(),
+            constants.port.to_string(),
+            "--hydra-signing-key".to_string(),
+            format!("{}/hydra.sk", constants.data_dir),
+            "--ledger-protocol-parameters".to_string(),
+            format!("{}/protocol-parameters.json", constants.config_dir),
+            "--persistence-dir".to_string(),
+            format!("{}/hydra-state", constants.persistence_dir),
         ];
-        open_head_args.extend(self.spec.commit_inputs.clone());
+
+        let main_container_args = if self.spec.offline.unwrap_or(false) {
+            let mut aux = vec![
+                "offline".to_string(),
+                "--initial-utxo".to_string(),
+                format!("{}/utxo.json", constants.initial_utxo_config_dir),
+            ];
+            aux.extend(main_container_common_args);
+            aux
+        } else {
+            let mut aux = vec![
+                "--node-id".to_string(),
+                self.name_any(),
+                "--cardano-signing-key".to_string(),
+                format!("{}/admin.sk", constants.secret_dir),
+                "--hydra-signing-key".to_string(),
+                format!("{}/hydra.sk", constants.data_dir),
+                "--hydra-scripts-tx-id".to_string(),
+                config.hydra_scripts_tx_id.clone(),
+                "--testnet-magic".to_string(),
+                "1".to_string(), // TODO: Hardcoded preprod.
+                "--node-socket".to_string(),
+                constants.socket_path.clone(),
+            ];
+            if let Some(start_chain_from) = &self.spec.start_chain_from {
+                aux.push("--start-chain-from".to_string());
+                aux.push(start_chain_from.clone());
+            }
+            aux
+        };
+
+        let mut containers = vec![
+            Container {
+                name: "main".to_string(),
+                image: Some(config.image.clone()),
+                args: Some(main_container_args),
+                ports: Some(vec![ContainerPort {
+                    name: Some("api".to_string()),
+                    container_port: constants.port,
+                    protocol: Some("TCP".to_string()),
+                    ..Default::default()
+                }]),
+                volume_mounts: Some(vec![
+                    VolumeMount {
+                        name: "initialutxo".to_string(),
+                        mount_path: constants.initial_utxo_config_dir.clone(),
+                        ..Default::default()
+                    },
+                    VolumeMount {
+                        name: "config".to_string(),
+                        mount_path: constants.config_dir.clone(),
+                        ..Default::default()
+                    },
+                    VolumeMount {
+                        name: "data".to_string(),
+                        mount_path: constants.data_dir.clone(),
+                        ..Default::default()
+                    },
+                    VolumeMount {
+                        name: "ipc".to_string(),
+                        mount_path: constants.socat_dir.clone(),
+                        ..Default::default()
+                    },
+                ]),
+                resources: None, // TODO: This should be parameterizable
+                ..Default::default()
+            },
+            Container {
+                name: "sidecar".to_string(),
+                image: Some(config.sidecar_image.clone()),
+                args: Some(vec![
+                    "metrics-exporter".to_string(),
+                    "--host".to_string(),
+                    "localhost".to_string(),
+                    "--port".to_string(),
+                    constants.port.to_string(),
+                ]),
+                ports: Some(vec![ContainerPort {
+                    name: Some("metrics".to_string()),
+                    container_port: constants.metrics_port,
+                    protocol: Some("TCP".to_string()),
+                    ..Default::default()
+                }]),
+                ..Default::default()
+            },
+        ];
+
+        // Offline is optional. If undefined, the node is presumed to be online.
+        if !self.spec.offline.unwrap_or(false) {
+            let mut open_head_args = vec![
+                "--network-id".to_string(),
+                self.spec.network_id.unwrap_or(0).to_string(),
+                "--seed-input".to_string(),
+                self.spec.seed_input.clone(),
+                "--participant".to_string(),
+                config.admin_addr.clone(),
+                "--party-verification-key-file".to_string(),
+                format!("{}/hydra.vk", constants.data_dir),
+                "--cardano-key-file".to_string(),
+                format!("{}/admin.sk", constants.secret_dir),
+                "--blockfrost-key".to_string(),
+                config.blockfrost_key.clone(),
+            ];
+            if !self.spec.commit_inputs.is_empty() {
+                open_head_args.push("--commit-inputs".to_string());
+                open_head_args.extend(self.spec.commit_inputs.clone());
+            }
+
+            containers.push(Container {
+                name: "open-head".to_string(),
+                image: Some(config.open_head_image.clone()),
+                args: Some(open_head_args),
+                volume_mounts: Some(vec![
+                    VolumeMount {
+                        name: "config".to_string(),
+                        mount_path: constants.config_dir.clone(),
+                        ..Default::default()
+                    },
+                    VolumeMount {
+                        name: "secret".to_string(),
+                        mount_path: constants.secret_dir.clone(),
+                        ..Default::default()
+                    },
+                    VolumeMount {
+                        name: "data".to_string(),
+                        mount_path: constants.data_dir.clone(),
+                        ..Default::default()
+                    },
+                ]),
+                resources: None, // TODO: Parametrize this
+                ..Default::default()
+            });
+
+            containers.push(Container {
+                name: "socat".to_string(),
+                image: Some(constants.socat_image.to_string()),
+                args: Some(vec![
+                    format!(
+                        "UNIX-LISTEN:{},reuseaddr,fork,unlink-early",
+                        constants.socket_path
+                    ),
+                    format!("TCP-CONNECT:{}", config.dmtr_node_port_authenticated_url),
+                ]),
+                security_context: Some(SecurityContext {
+                    run_as_user: Some(1000),
+                    run_as_group: Some(1000),
+                    ..Default::default()
+                }),
+                volume_mounts: Some(vec![VolumeMount {
+                    name: "ipc".to_string(),
+                    mount_path: constants.socat_dir.clone(),
+                    ..Default::default()
+                }]),
+                ..Default::default()
+            })
+        }
 
         Deployment {
             metadata: ObjectMeta {
@@ -178,97 +331,19 @@ impl HydraDoomNode {
                             }]),
                             ..Default::default()
                         }]),
-                        containers: vec![
-                            Container {
-                                name: "main".to_string(),
-                                image: Some(config.image.clone()),
-                                args: Some(vec![
-                                    "offline".to_string(),
-                                    "--host".to_string(),
-                                    "0.0.0.0".to_string(),
-                                    "--api-host".to_string(),
-                                    "0.0.0.0".to_string(),
-                                    "--port".to_string(),
-                                    "5001".to_string(),
-                                    "--api-port".to_string(),
-                                    constants.port.to_string(),
-                                    "--hydra-signing-key".to_string(),
-                                    format!("{}/hydra.sk", constants.data_dir),
-                                    "--ledger-protocol-parameters".to_string(),
-                                    format!("{}/protocol-parameters.json", constants.config_dir),
-                                    "--initial-utxo".to_string(),
-                                    format!("{}/utxo.json", constants.initial_utxo_config_dir),
-                                    "--persistence-dir".to_string(),
-                                    format!("{}/hydra-state", constants.persistence_dir),
-                                ]),
-                                ports: Some(vec![ContainerPort {
-                                    name: Some("api".to_string()),
-                                    container_port: constants.port,
-                                    protocol: Some("TCP".to_string()),
-                                    ..Default::default()
-                                }]),
-                                volume_mounts: Some(vec![
-                                    VolumeMount {
-                                        name: "initialutxo".to_string(),
-                                        mount_path: constants.initial_utxo_config_dir.clone(),
-                                        ..Default::default()
-                                    },
-                                    VolumeMount {
-                                        name: "config".to_string(),
-                                        mount_path: constants.config_dir.clone(),
-                                        ..Default::default()
-                                    },
-                                    VolumeMount {
-                                        name: "data".to_string(),
-                                        mount_path: constants.data_dir.clone(),
-                                        ..Default::default()
-                                    },
-                                ]),
-                                resources: None, // TODO: This should be parameterizable
-                                ..Default::default()
-                            },
-                            Container {
-                                name: "sidecar".to_string(),
-                                image: Some(config.sidecar_image.clone()),
-                                args: Some(vec![
-                                    "metrics-exporter".to_string(),
-                                    "--host".to_string(),
-                                    "localhost".to_string(),
-                                    "--port".to_string(),
-                                    constants.port.to_string(),
-                                ]),
-                                ports: Some(vec![ContainerPort {
-                                    name: Some("metrics".to_string()),
-                                    container_port: constants.metrics_port,
-                                    protocol: Some("TCP".to_string()),
-                                    ..Default::default()
-                                }]),
-                                ..Default::default()
-                            },
-                            // Container {
-                            //     name: "open-head".to_string(),
-                            //     image: Some(self.spec.open_head_image.clone()),
-                            //     args: Some(open_head_args),
-                            //     volume_mounts: Some(vec![
-                            //         VolumeMount {
-                            //             name: "config".to_string(),
-                            //             mount_path: constants.config_dir.clone(),
-                            //             ..Default::default()
-                            //         },
-                            //         VolumeMount {
-                            //             name: "secret".to_string(),
-                            //             mount_path: constants.secret_dir.clone(),
-                            //             ..Default::default()
-                            //         },
-                            //     ]),
-                            //     resources: None, // TODO: Parametrize this
-                            //     ..Default::default()
-                            // },
-                        ],
+                        containers,
                         volumes: Some(vec![
                             Volume {
                                 name: "data".to_string(),
                                 empty_dir: Some(EmptyDirVolumeSource::default()),
+                                ..Default::default()
+                            },
+                            Volume {
+                                name: "secret".to_string(),
+                                secret: Some(SecretVolumeSource {
+                                    secret_name: Some(config.secret.clone()),
+                                    ..Default::default()
+                                }),
                                 ..Default::default()
                             },
                             Volume {
@@ -285,6 +360,11 @@ impl HydraDoomNode {
                                     name: name.clone(),
                                     ..Default::default()
                                 }),
+                                ..Default::default()
+                            },
+                            Volume {
+                                name: "ipc".to_string(),
+                                empty_dir: Some(EmptyDirVolumeSource::default()),
                                 ..Default::default()
                             },
                         ]),

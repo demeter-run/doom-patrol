@@ -48,6 +48,8 @@ impl From<HydraDoomNodeState> for String {
 pub struct K8sConstants {
     pub config_dir: String,
     pub secret_dir: String,
+    pub socat_dir: String,
+    pub socket_path: String,
     pub initial_utxo_config_dir: String,
     pub data_dir: String,
     pub persistence_dir: String,
@@ -59,12 +61,16 @@ pub struct K8sConstants {
     pub metrics_endpoint: String,
     pub state_metric: String,
     pub transactions_metric: String,
+    pub socat_image: String,
 }
 impl Default for K8sConstants {
     fn default() -> Self {
         Self {
             config_dir: "/etc/config".to_string(),
             secret_dir: "/var/secret".to_string(),
+            socat_dir: "/ipc".to_string(),
+            socat_image: "alpine/socat".to_string(),
+            socket_path: "/ipc/socket".to_string(),
             initial_utxo_config_dir: "/etc/initial_utxo_config".to_string(),
             data_dir: "/var/data".to_string(),
             persistence_dir: "/var/persistence".to_string(),

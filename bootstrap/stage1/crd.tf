@@ -50,10 +50,6 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
               "properties" = {
                 "spec" = {
                   "properties" = {
-                    "blockfrostKey" = {
-                      "nullable" = true
-                      "type"     = "string"
-                    }
                     "commitInputs" = {
                       "items" = {
                         "type" = "string"
@@ -61,29 +57,25 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                       "type" = "array"
                     }
                     "networkId" = {
-                      "format"  = "uint8"
-                      "minimum" = 0
-                      "type"    = "integer"
+                      "format"   = "uint8"
+                      "minimum"  = 0
+                      "nullable" = true
+                      "type"     = "integer"
                     }
                     "offline" = {
                       "nullable" = true
                       "type"     = "boolean"
                     }
-                    "participant" = {
-                      "type" = "string"
-                    }
-                    "party" = {
-                      "type" = "string"
-                    }
                     "seedInput" = {
                       "type" = "string"
+                    }
+                    "startChainFrom" = {
+                      "nullable" = true
+                      "type"     = "string"
                     }
                   }
                   "required" = [
                     "commitInputs",
-                    "networkId",
-                    "participant",
-                    "party",
                     "seedInput",
                   ]
                   "type" = "object"
