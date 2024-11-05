@@ -1,6 +1,6 @@
 locals {
   namespace      = "hydra-doom"
-  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-aa3fdda"
+  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-08c1f0f"
   # operator_image = "doom-patrol-operator:local"
 }
 
@@ -48,9 +48,11 @@ module "stage2" {
   external_domain     = "us-east-1.hydra-doom.sundae.fi"
   operator_image      = local.operator_image
   hydra_node_image    = "ghcr.io/cardano-scaling/hydra-node:unstable"
-  sidecar_image       = "ghcr.io/demeter-run/doom-patrol-metrics-exporter:a5406f8180a77474c06e44f95619cada183bb8fe"
-  open_head_image     = "ghcr.io/demeter-run/doom-patrol-hydra:0ee2f6b6d38e500097d992820e0089ead7cb10bc"
-  control_plane_image = "ghcr.io/demeter-run/doom-patrol-hydra:c4d9d80ea42a202408cf062193d2a675a42f432f"
+  sidecar_image       = "ghcr.io/demeter-run/doom-patrol-hydra:08c1f0f1c58be998a07ab218b0a694785d16bb09"
+  open_head_image     = "ghcr.io/demeter-run/doom-patrol-hydra:08c1f0f1c58be998a07ab218b0a694785d16bb09"
+  control_plane_image = "ghcr.io/demeter-run/doom-patrol-hydra:08c1f0f1c58be998a07ab218b0a694785d16bb09"
   blockfrost_key      = ""
   external_port       = 80
+  admin_key_path      = "${path.module}/admin.sk"
+  admin_addr          = "addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc"
 }

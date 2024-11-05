@@ -88,8 +88,8 @@ resource "kubernetes_deployment_v1" "control_plane" {
 
         volume {
           name = "secret"
-          config_map {
-            name = local.secret
+          secret {
+            secret_name = local.secret
           }
         }
 

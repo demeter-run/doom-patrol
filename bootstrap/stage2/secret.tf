@@ -4,8 +4,7 @@ resource "kubernetes_secret" "admin_key" {
     namespace = var.namespace
   }
   data = {
-    # "admin.sk" = "${file("${path.module}/admin.sk")}"
-    "admin.sk" = var.admin_key_path
+    "admin.sk" = "${file(var.admin_key_path)}"
   }
   type = "Opaque"
 }
