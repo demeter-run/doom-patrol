@@ -14,18 +14,6 @@ RUN cp ./target/release/open-head /bin/open-head
 RUN cp ./target/release/control-plane /bin/control-plane
 
 FROM debian:bullseye-slim AS final
-
-# Create a non-privileged user that the app will run under.
-# See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
-ARG UID=10001
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/home/app" \
-    --shell "/sbin/nologin" \
-    --uid "${UID}" \
-    appuser
-USER appuser
 WORKDIR /home/app
 
 # Copy the executable from the "build" stage.
