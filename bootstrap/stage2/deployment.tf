@@ -81,7 +81,7 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
-            name  = "OFFLINE_INITIAL_UTXO_ADDRESS"
+            name  = "ADMIN_ADDR"
             value = var.admin_addr
           }
 
@@ -91,8 +91,18 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
-            name  = "DMTR_NODE_PORT_AUTHENTICATED_URL"
-            value = var.dmtr_node_port_authenticated_url
+            name  = "DMTR_PROJECT_ID"
+            value = var.dmtr_project_id
+          }
+
+          env {
+            name  = "DMTR_API_KEY"
+            value = var.dmtr_api_key
+          }
+
+          env {
+            name  = "DMTR_PORT_NAME"
+            value = var.dmtr_port_name
           }
 
           resources {

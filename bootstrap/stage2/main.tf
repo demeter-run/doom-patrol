@@ -57,7 +57,15 @@ variable "hydra_scripts_tx_id" {
   type = string
 }
 
-variable "dmtr_node_port_authenticated_url" {
+variable "dmtr_project_id" {
+  type = string
+}
+
+variable "dmtr_api_key" {
+  type = string
+}
+
+variable "dmtr_port_name" {
   type = string
 }
 

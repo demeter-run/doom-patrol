@@ -13,3 +13,5 @@ utxo.json
 .pre-commit-config.yaml
 /playbook/local.tfstate*
 /playbook/.terraform*
+
+env.auto.tfvars

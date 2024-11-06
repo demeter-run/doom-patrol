@@ -1,7 +1,6 @@
 locals {
   namespace      = "hydra-doom"
-  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-08c1f0f"
-  # operator_image = "doom-patrol-operator:local"
+  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-0b846e7"
 }
 
 terraform {
@@ -36,6 +35,22 @@ resource "kubernetes_namespace" "namespace" {
   }
 }
 
+variable "blockfrost_key" {
+  type = string
+}
+
+variable "dmtr_project_id" {
+  type = string
+}
+
+variable "dmtr_api_key" {
+  type = string
+}
+
+variable "dmtr_port_name" {
+  type = string
+}
+
 module "stage1" {
   source = "../bootstrap/stage1/"
 }
@@ -48,11 +63,15 @@ module "stage2" {
   external_domain     = "us-east-1.hydra-doom.sundae.fi"
   operator_image      = local.operator_image
   hydra_node_image    = "ghcr.io/cardano-scaling/hydra-node:unstable"
-  sidecar_image       = "ghcr.io/demeter-run/doom-patrol-hydra:08c1f0f1c58be998a07ab218b0a694785d16bb09"
-  open_head_image     = "ghcr.io/demeter-run/doom-patrol-hydra:08c1f0f1c58be998a07ab218b0a694785d16bb09"
-  control_plane_image = "ghcr.io/demeter-run/doom-patrol-hydra:08c1f0f1c58be998a07ab218b0a694785d16bb09"
-  blockfrost_key      = ""
+  sidecar_image       = "ghcr.io/demeter-run/doom-patrol-hydra:803df77809e3b5d65ad752603257b31ee05cf481"
+  open_head_image     = "ghcr.io/demeter-run/doom-patrol-hydra:803df77809e3b5d65ad752603257b31ee05cf481"
+  control_plane_image = "ghcr.io/demeter-run/doom-patrol-hydra:803df77809e3b5d65ad752603257b31ee05cf481"
+  blockfrost_key      = var.blockfrost_key
   external_port       = 80
   admin_key_path      = "${path.module}/admin.sk"
   admin_addr          = "addr_test1vpgcjapuwl7gfnzhzg6svtj0ph3gxu8kyuadudmf0kzsksqrfugfc"
+  dmtr_project_id     = var.dmtr_project_id
+  dmtr_api_key        = var.dmtr_api_key
+  dmtr_port_name      = var.dmtr_port_name
+  hydra_scripts_tx_id = "31b833c943fc267ee532c772be032183d5842b69492afaf5daa360171168c238"
 }
