@@ -21,7 +21,9 @@ pub struct Config {
     pub external_port: String,
     pub admin_addr: String,
     pub hydra_scripts_tx_id: String,
-    pub dmtr_node_port_authenticated_url: String,
+    pub dmtr_project_id: String,
+    pub dmtr_api_key: String,
+    pub dmtr_port_name: String,
 }
 
 impl Config {
@@ -38,8 +40,9 @@ impl Config {
             admin_addr: env::var("ADMIN_ADDR").expect("Missing ADMIN_ADDR env var."),
             hydra_scripts_tx_id: env::var("HYDRA_SCRIPTS_TX_ID")
                 .expect("Missing HYDRA_SCRIPTS_TX_ID env var."),
-            dmtr_node_port_authenticated_url: env::var("DMTR_NODE_PORT_AUTHENTICATED_URL")
-                .expect("Missing DMTR_NODE_PORT_AUTHENTICATED_URL env var."),
+            dmtr_project_id: env::var("DMTR_PROJECT_ID").expect("Missing DMTR_PROJECT_ID env var."),
+            dmtr_api_key: env::var("DMTR_API_KEY").expect("Missing DMTR_API_KEY env var."),
+            dmtr_port_name: env::var("DMTR_PORT_NAME").expect("Missing DMTR_PORT_NAME env var."),
         }
     }
 }

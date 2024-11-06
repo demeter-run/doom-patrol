@@ -206,7 +206,7 @@ impl HydraDoomNode {
                     },
                     VolumeMount {
                         name: "ipc".to_string(),
-                        mount_path: constants.socat_dir.clone(),
+                        mount_path: constants.socket_dir.clone(),
                         ..Default::default()
                     },
                 ]),
@@ -281,14 +281,18 @@ impl HydraDoomNode {
             });
 
             containers.push(Container {
-                name: "socat".to_string(),
-                image: Some(constants.socat_image.to_string()),
+                name: "dmtrctl".to_string(),
+                image: Some(constants.dmtrctl_image.to_string()),
                 args: Some(vec![
-                    format!(
-                        "UNIX-LISTEN:{},reuseaddr,fork,unlink-early",
-                        constants.socket_path
-                    ),
-                    format!("TCP-CONNECT:{}", config.dmtr_node_port_authenticated_url),
+                    "--project-id".to_string(),
+                    config.dmtr_project_id.clone(),
+                    "--api-key".to_string(),
+                    config.dmtr_api_key.clone(),
+                    "ports".to_string(),
+                    "tunnel".to_string(),
+                    config.dmtr_port_name.clone(),
+                    "--socket".to_string(),
+                    constants.socket_path.clone(),
                 ]),
                 security_context: Some(SecurityContext {
                     run_as_user: Some(1000),
@@ -297,7 +301,7 @@ impl HydraDoomNode {
                 }),
                 volume_mounts: Some(vec![VolumeMount {
                     name: "ipc".to_string(),
-                    mount_path: constants.socat_dir.clone(),
+                    mount_path: constants.socket_dir.clone(),
                     ..Default::default()
                 }]),
                 ..Default::default()
