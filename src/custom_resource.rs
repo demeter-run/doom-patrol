@@ -408,7 +408,7 @@ impl HydraDoomNode {
                             Volume {
                                 name: "persistence".to_string(),
                                 persistent_volume_claim: Some(PersistentVolumeClaimVolumeSource {
-                                    claim_name: self.name_any(),
+                                    claim_name: name.clone(),
                                     ..Default::default()
                                 }),
                                 ..Default::default()
