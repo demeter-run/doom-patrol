@@ -5,13 +5,13 @@ resource "kubernetes_cluster_role" "cluster_role" {
 
   rule {
     api_groups = ["apps"]
-    resources  = ["deployments"]
+    resources  = ["deployments", "statefulsets"]
     verbs      = ["*"]
   }
 
   rule {
     api_groups = [""]
-    resources  = ["services"]
+    resources  = ["services", "persistentvolumeclaims"]
     verbs      = ["*"]
   }
 

@@ -1,6 +1,6 @@
 locals {
   namespace      = "hydra-doom"
-  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-0b846e7"
+  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-f51cab3"
 }
 
 terraform {
@@ -52,7 +52,8 @@ variable "dmtr_port_name" {
 }
 
 module "stage1" {
-  source = "../bootstrap/stage1/"
+  source    = "../bootstrap/stage1/"
+  efs_fs_id = "fs-0cfa4cc6888c81f30"
 }
 
 module "stage2" {
@@ -73,5 +74,5 @@ module "stage2" {
   dmtr_project_id     = var.dmtr_project_id
   dmtr_api_key        = var.dmtr_api_key
   dmtr_port_name      = var.dmtr_port_name
-  hydra_scripts_tx_id = "31b833c943fc267ee532c772be032183d5842b69492afaf5daa360171168c238"
+  hydra_scripts_tx_id = "03f8deb122fbbd98af8eb58ef56feda37728ec957d39586b78198a0cf624412a"
 }
