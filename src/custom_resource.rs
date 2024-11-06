@@ -2,8 +2,8 @@ use k8s_openapi::api::{
     apps::v1::{Deployment, DeploymentSpec},
     core::v1::{
         ConfigMap, ConfigMapVolumeSource, Container, ContainerPort, EmptyDirVolumeSource, PodSpec,
-        PodTemplateSpec, SecretVolumeSource, SecurityContext, Service, ServicePort, ServiceSpec,
-        Volume, VolumeMount,
+        PodTemplateSpec, SecretVolumeSource, Service, ServicePort, ServiceSpec, Volume,
+        VolumeMount,
     },
     networking::v1::{
         HTTPIngressPath, HTTPIngressRuleValue, Ingress, IngressBackend, IngressRule,
@@ -294,11 +294,6 @@ impl HydraDoomNode {
                     "--socket".to_string(),
                     constants.socket_path.clone(),
                 ]),
-                security_context: Some(SecurityContext {
-                    run_as_user: Some(1000),
-                    run_as_group: Some(1000),
-                    ..Default::default()
-                }),
                 volume_mounts: Some(vec![VolumeMount {
                     name: "ipc".to_string(),
                     mount_path: constants.socket_dir.clone(),
