@@ -50,6 +50,10 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
               "properties" = {
                 "spec" = {
                   "properties" = {
+                    "asleep" = {
+                      "nullable" = true
+                      "type"     = "boolean"
+                    }
                     "commitInputs" = {
                       "items" = {
                         "type" = "string"

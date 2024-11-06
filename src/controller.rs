@@ -1,7 +1,7 @@
 use anyhow::bail;
 use k8s_openapi::api::{
-    apps::v1::Deployment,
-    core::v1::{ConfigMap, Service},
+    apps::v1::StatefulSet,
+    core::v1::{ConfigMap, PersistentVolumeClaim, Service},
     networking::v1::Ingress,
 };
 use kube::{
@@ -23,6 +23,7 @@ pub enum HydraDoomNodeState {
     Online,
     HeadIsInitializing,
     HeadIsOpen,
+    Sleeping,
 }
 impl From<f64> for HydraDoomNodeState {
     fn from(value: f64) -> Self {
@@ -41,6 +42,7 @@ impl From<HydraDoomNodeState> for String {
             HydraDoomNodeState::Online => "Online".to_string(),
             HydraDoomNodeState::HeadIsInitializing => "HeadIsInitializing".to_string(),
             HydraDoomNodeState::HeadIsOpen => "HeadIsOpen".to_string(),
+            HydraDoomNodeState::Sleeping => "Sleeping".to_string(),
         }
     }
 }
@@ -62,10 +64,14 @@ pub struct K8sConstants {
     pub state_metric: String,
     pub transactions_metric: String,
     pub dmtrctl_image: String,
+    pub storage_class_name: String,
+    pub persistence_dir_storage_request: String,
 }
 impl Default for K8sConstants {
     fn default() -> Self {
         Self {
+            persistence_dir_storage_request: "5Gi".to_string(),
+            storage_class_name: "efs-sc".to_string(),
             config_dir: "/etc/config".to_string(),
             secret_dir: "/var/secret".to_string(),
             socket_dir: "/ipc".to_string(),
@@ -128,13 +134,14 @@ impl K8sContext {
     pub async fn patch(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
         info!("Running patch");
         match tokio::join!(
-            self.patch_deployment(crd),
+            self.patch_sts(crd),
             self.patch_service(crd),
             self.patch_ingress(crd),
             self.patch_configmap(crd),
+            self.patch_pvc(crd),
             self.patch_crd(crd)
         ) {
-            (Ok(_), Ok(_), Ok(_), Ok(_), Ok(_)) => (),
+            (Ok(_), Ok(_), Ok(_), Ok(_), Ok(_), Ok(_)) => (),
             _ => bail!("Failed to apply patch for components."),
         };
 
@@ -143,12 +150,13 @@ impl K8sContext {
 
     pub async fn delete(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
         match tokio::join!(
-            self.remove_deployment(crd),
+            self.remove_sts(crd),
             self.remove_service(crd),
             self.remove_ingress(crd),
-            self.remove_configmap(crd)
+            self.remove_configmap(crd),
+            self.remove_pvc(crd)
         ) {
-            (Ok(_), Ok(_), Ok(_), Ok(_)) => Ok(()),
+            (Ok(_), Ok(_), Ok(_), Ok(_), Ok(_)) => Ok(()),
             _ => bail!("Failed to remove resources"),
         }
     }
@@ -171,6 +179,35 @@ impl K8sContext {
             error!(err = err.to_string(), "Failed to patch CRD.");
             anyhow::Error::from(err)
         })
+    }
+
+    async fn patch_pvc(&self, crd: &HydraDoomNode) -> anyhow::Result<PersistentVolumeClaim> {
+        let api: Api<PersistentVolumeClaim> =
+            Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
+
+        // Create or patch the configmap
+        api.patch(
+            &crd.internal_name(),
+            &PatchParams::apply("hydra-doom-pod-controller"),
+            &Patch::Apply(&crd.configmap(&self.config, &self.constants)),
+        )
+        .await
+        .map_err(|err| {
+            error!(err = err.to_string(), "Failed to create pvc.");
+            err.into()
+        })
+    }
+
+    async fn remove_pvc(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
+        let api: Api<PersistentVolumeClaim> =
+            Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
+        match api
+            .delete(&crd.internal_name(), &DeleteParams::default())
+            .await
+        {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
     }
 
     async fn patch_configmap(&self, crd: &HydraDoomNode) -> anyhow::Result<ConfigMap> {
@@ -200,30 +237,27 @@ impl K8sContext {
         }
     }
 
-    async fn patch_deployment(&self, crd: &HydraDoomNode) -> anyhow::Result<Deployment> {
-        let deployments: Api<Deployment> =
-            Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
+    async fn patch_sts(&self, crd: &HydraDoomNode) -> anyhow::Result<StatefulSet> {
+        let api: Api<StatefulSet> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
 
-        // Create or patch the deployment
-        deployments
-            .patch(
-                &crd.internal_name(),
-                &PatchParams::apply("hydra-doom-pod-controller"),
-                &Patch::Apply(&crd.deployment(&self.config, &self.constants)),
-            )
-            .await
-            .map_err(|err| {
-                error!(err = err.to_string(), "Failed to create deployment.");
-                err.into()
-            })
+        // Create or patch the sts
+        api.patch(
+            &crd.internal_name(),
+            &PatchParams::apply("hydra-doom-pod-controller"),
+            &Patch::Apply(&crd.sts(&self.config, &self.constants)),
+        )
+        .await
+        .map_err(|err| {
+            error!(err = err.to_string(), "Failed to create sts.");
+            err.into()
+        })
     }
 
-    async fn remove_deployment(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
-        let deployments: Api<Deployment> =
-            Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
+    async fn remove_sts(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
+        let api: Api<StatefulSet> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
         let dp = DeleteParams::default();
 
-        match deployments.delete(&crd.internal_name(), &dp).await {
+        match api.delete(&crd.internal_name(), &dp).await {
             Ok(_) => Ok(()),
             Err(e) => Err(e.into()),
         }
@@ -287,6 +321,19 @@ impl K8sContext {
             self.constants.metrics_port,
             self.constants.metrics_endpoint
         );
+
+        if crd.spec.asleep.unwrap_or(false) {
+            return HydraDoomNodeStatus {
+                state: HydraDoomNodeState::Sleeping.into(),
+                transactions: 0,
+                local_url: format!("ws://{}:{}", crd.internal_host(), self.constants.port),
+                external_url: format!(
+                    "ws://{}:{}",
+                    crd.external_host(&self.config, &self.constants),
+                    self.config.external_port
+                ),
+            };
+        }
         let default = HydraDoomNodeStatus::offline(crd, &self.config, &self.constants);
 
         match reqwest::get(&url).await {
