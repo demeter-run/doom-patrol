@@ -63,7 +63,7 @@ module "stage2" {
   namespace           = local.namespace
   external_domain     = "us-east-1.hydra-doom.sundae.fi"
   operator_image      = local.operator_image
-  hydra_node_image    = "ghcr.io/cardano-scaling/hydra-node:unstable"
+  hydra_node_image    = "ghcr.io/cardano-scaling/hydra-node:latest"
   sidecar_image       = "ghcr.io/demeter-run/doom-patrol-hydra:803df77809e3b5d65ad752603257b31ee05cf481"
   open_head_image     = "ghcr.io/demeter-run/doom-patrol-hydra:803df77809e3b5d65ad752603257b31ee05cf481"
   control_plane_image = "ghcr.io/demeter-run/doom-patrol-hydra:803df77809e3b5d65ad752603257b31ee05cf481"
