@@ -1,18 +1,14 @@
-use k8s_openapi::{
-    api::{
-        apps::v1::{StatefulSet, StatefulSetSpec},
-        core::v1::{
-            ConfigMap, ConfigMapVolumeSource, Container, ContainerPort, EmptyDirVolumeSource,
-            PersistentVolumeClaim, PersistentVolumeClaimSpec, PersistentVolumeClaimVolumeSource,
-            PodSpec, PodTemplateSpec, SecretVolumeSource, Service, ServicePort, ServiceSpec,
-            Volume, VolumeMount, VolumeResourceRequirements,
-        },
-        networking::v1::{
-            HTTPIngressPath, HTTPIngressRuleValue, Ingress, IngressBackend, IngressRule,
-            IngressServiceBackend, IngressSpec, ServiceBackendPort,
-        },
+use k8s_openapi::api::{
+    apps::v1::{Deployment, DeploymentSpec},
+    core::v1::{
+        ConfigMap, ConfigMapVolumeSource, Container, ContainerPort, EmptyDirVolumeSource, PodSpec,
+        PodTemplateSpec, SecretVolumeSource, Service, ServicePort, ServiceSpec, Volume,
+        VolumeMount,
     },
-    apimachinery::pkg::api::resource::Quantity,
+    networking::v1::{
+        HTTPIngressPath, HTTPIngressRuleValue, Ingress, IngressBackend, IngressRule,
+        IngressServiceBackend, IngressSpec, ServiceBackendPort,
+    },
 };
 use kube::{api::ObjectMeta, CustomResource, ResourceExt};
 use schemars::JsonSchema;
@@ -126,35 +122,11 @@ impl HydraDoomNode {
         }
     }
 
-    pub fn pvc(&self, _config: &Config, constants: &K8sConstants) -> PersistentVolumeClaim {
-        let name = self.internal_name();
-
-        PersistentVolumeClaim {
-            metadata: ObjectMeta {
-                name: Some(name.clone()),
-                ..Default::default()
-            },
-            spec: Some(PersistentVolumeClaimSpec {
-                access_modes: Some(vec!["ReadWriteMany".to_string()]),
-                storage_class_name: Some(constants.storage_class_name.clone()),
-                resources: Some(VolumeResourceRequirements {
-                    requests: Some(BTreeMap::from([(
-                        "storage".to_string(),
-                        Quantity(constants.persistence_dir_storage_request.clone()),
-                    )])),
-                    ..Default::default()
-                }),
-                ..Default::default()
-            }),
-            ..Default::default()
-        }
-    }
-
-    pub fn sts(&self, config: &Config, constants: &K8sConstants) -> StatefulSet {
+    pub fn deployment(&self, config: &Config, constants: &K8sConstants) -> Deployment {
         let name = self.internal_name();
         let labels = self.internal_labels();
 
-        // Common sts parts:
+        // Common deployment parts:
         let main_container_common_args = vec![
             "--host".to_string(),
             "0.0.0.0".to_string(),
@@ -165,7 +137,7 @@ impl HydraDoomNode {
             "--api-port".to_string(),
             constants.port.to_string(),
             "--hydra-signing-key".to_string(),
-            format!("{}/hydra.sk", constants.data_dir),
+            format!("{}/keys/hydra.sk", constants.data_dir),
             "--ledger-protocol-parameters".to_string(),
             format!("{}/protocol-parameters.json", constants.config_dir),
             "--persistence-dir".to_string(),
@@ -234,11 +206,6 @@ impl HydraDoomNode {
                         ..Default::default()
                     },
                     VolumeMount {
-                        name: "persistence".to_string(),
-                        mount_path: constants.persistence_dir.clone(),
-                        ..Default::default()
-                    },
-                    VolumeMount {
                         name: "ipc".to_string(),
                         mount_path: constants.socket_dir.clone(),
                         ..Default::default()
@@ -278,7 +245,7 @@ impl HydraDoomNode {
                 "--participant".to_string(),
                 config.admin_addr.clone(),
                 "--party-verification-file".to_string(),
-                format!("{}/hydra.vk", constants.data_dir),
+                format!("{}/keys/hydra.vk", constants.data_dir),
                 "--cardano-key-file".to_string(),
                 format!("{}/admin.sk", constants.secret_dir),
                 "--blockfrost-key".to_string(),
@@ -337,13 +304,12 @@ impl HydraDoomNode {
             })
         }
 
-        StatefulSet {
+        Deployment {
             metadata: ObjectMeta {
                 name: Some(name.clone()),
                 ..Default::default()
             },
-            spec: Some(StatefulSetSpec {
-                service_name: "hydra-doom-node".to_string(),
+            spec: Some(DeploymentSpec {
                 replicas: Some(if self.spec.asleep.unwrap_or(false) {
                     0
                 } else {
@@ -401,14 +367,6 @@ impl HydraDoomNode {
                                 name: "initialutxo".to_string(),
                                 config_map: Some(ConfigMapVolumeSource {
                                     name: name.clone(),
-                                    ..Default::default()
-                                }),
-                                ..Default::default()
-                            },
-                            Volume {
-                                name: "persistence".to_string(),
-                                persistent_volume_claim: Some(PersistentVolumeClaimVolumeSource {
-                                    claim_name: name.clone(),
                                     ..Default::default()
                                 }),
                                 ..Default::default()

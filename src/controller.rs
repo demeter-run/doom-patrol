@@ -1,7 +1,7 @@
 use anyhow::bail;
 use k8s_openapi::api::{
     apps::v1::StatefulSet,
-    core::v1::{ConfigMap, PersistentVolumeClaim, Service},
+    core::v1::{ConfigMap, Service},
     networking::v1::Ingress,
 };
 use kube::{
@@ -65,12 +65,10 @@ pub struct K8sConstants {
     pub transactions_metric: String,
     pub dmtrctl_image: String,
     pub storage_class_name: String,
-    pub persistence_dir_storage_request: String,
 }
 impl Default for K8sConstants {
     fn default() -> Self {
         Self {
-            persistence_dir_storage_request: "5Gi".to_string(),
             storage_class_name: "efs-sc".to_string(),
             config_dir: "/etc/config".to_string(),
             secret_dir: "/var/secret".to_string(),
@@ -79,7 +77,7 @@ impl Default for K8sConstants {
             socket_path: "/ipc/socket".to_string(),
             initial_utxo_config_dir: "/etc/initial_utxo_config".to_string(),
             data_dir: "/var/data".to_string(),
-            persistence_dir: "/var/persistence".to_string(),
+            persistence_dir: "/var/data/persistence".to_string(),
             node_port: 5001,
             port: 4001,
             metrics_port: 8000,
@@ -134,14 +132,13 @@ impl K8sContext {
     pub async fn patch(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
         info!("Running patch");
         match tokio::join!(
-            self.patch_sts(crd),
+            self.patch_deployment(crd),
             self.patch_service(crd),
             self.patch_ingress(crd),
             self.patch_configmap(crd),
-            self.patch_pvc(crd),
             self.patch_crd(crd)
         ) {
-            (Ok(_), Ok(_), Ok(_), Ok(_), Ok(_), Ok(_)) => (),
+            (Ok(_), Ok(_), Ok(_), Ok(_), Ok(_)) => (),
             _ => bail!("Failed to apply patch for components."),
         };
 
@@ -150,13 +147,12 @@ impl K8sContext {
 
     pub async fn delete(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
         match tokio::join!(
-            self.remove_sts(crd),
+            self.remove_deployment(crd),
             self.remove_service(crd),
             self.remove_ingress(crd),
             self.remove_configmap(crd),
-            self.remove_pvc(crd)
         ) {
-            (Ok(_), Ok(_), Ok(_), Ok(_), Ok(_)) => Ok(()),
+            (Ok(_), Ok(_), Ok(_), Ok(_)) => Ok(()),
             _ => bail!("Failed to remove resources"),
         }
     }
@@ -179,35 +175,6 @@ impl K8sContext {
             error!(err = err.to_string(), "Failed to patch CRD.");
             anyhow::Error::from(err)
         })
-    }
-
-    async fn patch_pvc(&self, crd: &HydraDoomNode) -> anyhow::Result<PersistentVolumeClaim> {
-        let api: Api<PersistentVolumeClaim> =
-            Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
-
-        // Create or patch the configmap
-        api.patch(
-            &crd.internal_name(),
-            &PatchParams::apply("hydra-doom-pod-controller"),
-            &Patch::Apply(&crd.pvc(&self.config, &self.constants)),
-        )
-        .await
-        .map_err(|err| {
-            error!(err = err.to_string(), "Failed to create pvc.");
-            err.into()
-        })
-    }
-
-    async fn remove_pvc(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
-        let api: Api<PersistentVolumeClaim> =
-            Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
-        match api
-            .delete(&crd.internal_name(), &DeleteParams::default())
-            .await
-        {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e.into()),
-        }
     }
 
     async fn patch_configmap(&self, crd: &HydraDoomNode) -> anyhow::Result<ConfigMap> {
@@ -237,23 +204,23 @@ impl K8sContext {
         }
     }
 
-    async fn patch_sts(&self, crd: &HydraDoomNode) -> anyhow::Result<StatefulSet> {
+    async fn patch_deployment(&self, crd: &HydraDoomNode) -> anyhow::Result<StatefulSet> {
         let api: Api<StatefulSet> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
 
-        // Create or patch the sts
+        // Create or patch the deployment
         api.patch(
             &crd.internal_name(),
             &PatchParams::apply("hydra-doom-pod-controller"),
-            &Patch::Apply(&crd.sts(&self.config, &self.constants)),
+            &Patch::Apply(&crd.deployment(&self.config, &self.constants)),
         )
         .await
         .map_err(|err| {
-            error!(err = err.to_string(), "Failed to create sts.");
+            error!(err = err.to_string(), "Failed to create deployment.");
             err.into()
         })
     }
 
-    async fn remove_sts(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
+    async fn remove_deployment(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
         let api: Api<StatefulSet> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
         let dp = DeleteParams::default();
 
