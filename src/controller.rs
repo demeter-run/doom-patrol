@@ -379,7 +379,7 @@ impl K8sContext {
     }
 
     async fn patch_statuses(&self) -> anyhow::Result<()> {
-        let api: Api<HydraDoomNode> = Api::all(self.client.clone());
+        let api: Api<HydraDoomNode> = Api::default_namespaced(self.client.clone());
         let crds = api.list(&ListParams::default()).await?;
 
         let mut awaitables = vec![];

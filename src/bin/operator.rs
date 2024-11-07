@@ -23,7 +23,7 @@ async fn main() -> Result<()> {
     let context = Arc::new(K8sContext::new(client.clone(), config));
 
     // Create controller for MyApp custom resource
-    let api: Api<HydraDoomNode> = Api::all(client);
+    let api: Api<HydraDoomNode> = Api::default_namespaced(client);
     info!("Running controller.");
     let controller = Controller::new(api, Default::default())
         .run(reconcile, error_policy, context.clone())
