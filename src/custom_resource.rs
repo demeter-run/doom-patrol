@@ -137,7 +137,7 @@ impl HydraDoomNode {
             "--api-port".to_string(),
             constants.port.to_string(),
             "--hydra-signing-key".to_string(),
-            format!("{}/keys/hydra.sk", constants.data_dir),
+            format!("{}/hydra.sk", constants.data_dir),
             "--ledger-protocol-parameters".to_string(),
             format!("{}/protocol-parameters.json", constants.config_dir),
             "--persistence-dir".to_string(),
@@ -245,7 +245,7 @@ impl HydraDoomNode {
                 "--participant".to_string(),
                 config.admin_addr.clone(),
                 "--party-verification-file".to_string(),
-                format!("{}/keys/hydra.vk", constants.data_dir),
+                format!("{}/hydra.vk", constants.data_dir),
                 "--cardano-key-file".to_string(),
                 format!("{}/admin.sk", constants.secret_dir),
                 "--blockfrost-key".to_string(),
@@ -331,7 +331,7 @@ impl HydraDoomNode {
                             args: Some(vec![
                                 "gen-hydra-key".to_string(),
                                 "--output-file".to_string(),
-                                format!("{}/keys/hydra", constants.data_dir),
+                                format!("{}/hydra", constants.data_dir),
                             ]),
                             volume_mounts: Some(vec![VolumeMount {
                                 name: "data".to_string(),
