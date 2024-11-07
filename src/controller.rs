@@ -1,6 +1,6 @@
 use anyhow::bail;
 use k8s_openapi::api::{
-    apps::v1::StatefulSet,
+    apps::v1::Deployment,
     core::v1::{ConfigMap, Service},
     networking::v1::Ingress,
 };
@@ -204,8 +204,8 @@ impl K8sContext {
         }
     }
 
-    async fn patch_deployment(&self, crd: &HydraDoomNode) -> anyhow::Result<StatefulSet> {
-        let api: Api<StatefulSet> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
+    async fn patch_deployment(&self, crd: &HydraDoomNode) -> anyhow::Result<Deployment> {
+        let api: Api<Deployment> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
 
         // Create or patch the deployment
         api.patch(
@@ -221,7 +221,7 @@ impl K8sContext {
     }
 
     async fn remove_deployment(&self, crd: &HydraDoomNode) -> anyhow::Result<()> {
-        let api: Api<StatefulSet> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
+        let api: Api<Deployment> = Api::namespaced(self.client.clone(), &crd.namespace().unwrap());
         let dp = DeleteParams::default();
 
         match api.delete(&crd.internal_name(), &dp).await {
