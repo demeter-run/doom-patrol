@@ -7,10 +7,7 @@ on:
     paths:
       - ".github/workflows/init.yml"
       - "docker/dockerfile.init"
-  workflow_dispatch:
-    inputs:
-      mumak_version:
-        required: false
+  workflow_dispatch: {}
 
 jobs:
   build-images:
