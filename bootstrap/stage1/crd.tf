@@ -70,6 +70,46 @@ resource "kubernetes_manifest" "customresourcedefinition_hydradoomnodes_hydra_do
                       "nullable" = true
                       "type"     = "boolean"
                     }
+                    "resources" = {
+                      "nullable" = true
+                      "properties" = {
+                        "limits" = {
+                          "properties" = {
+                            "cpu" = {
+                              "type" = "string"
+                            }
+                            "memory" = {
+                              "type" = "string"
+                            }
+                          }
+                          "required" = [
+                            "cpu",
+                            "memory",
+                          ]
+                          "type" = "object"
+                        }
+                        "requests" = {
+                          "properties" = {
+                            "cpu" = {
+                              "type" = "string"
+                            }
+                            "memory" = {
+                              "type" = "string"
+                            }
+                          }
+                          "required" = [
+                            "cpu",
+                            "memory",
+                          ]
+                          "type" = "object"
+                        }
+                      }
+                      "required" = [
+                        "limits",
+                        "requests",
+                      ]
+                      "type" = "object"
+                    }
                     "seedInput" = {
                       "type" = "string"
                     }

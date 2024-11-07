@@ -10,8 +10,28 @@
 apiVersion: hydra.doom/v1alpha1
 kind: HydraDoomNode
 metadata:
-  name: a00000
+  name: a00001
   namespace: hydra-doom
+spec:
+  offline: true
+  seedInput: _unused
+  commitInputs: []
+---
+apiVersion: hydra.doom/v1alpha1
+kind: HydraDoomNode
+metadata:
+  name: a00002
+  namespace: hydra-doom-dev
+spec:
+  offline: true
+  seedInput: _unused
+  commitInputs: []
+---
+apiVersion: hydra.doom/v1alpha1
+kind: HydraDoomNode
+metadata:
+  name: testoffline
+  namespace: hydra-doom-dev
 spec:
   offline: true
   seedInput: _unused

@@ -21,7 +21,7 @@ managedNodeGroups:
     instanceTypes: [ t3a.medium, t3.medium ]
     minSize: 0
     maxSize: 2
-    desiredCapacity: 1
+    desiredCapacity: 2
     spot: true
     availabilityZones:
       - us-east-1b
@@ -32,5 +32,12 @@ fargateProfiles:
       sundae-labs:cost-allocation:Service: hydra-doom
     selectors:
       - namespace: hydra-doom
+        labels:
+          run-on: fargate
+  - name: fp-dev
+    tags: 
+      sundae-labs:cost-allocation:Service: hydra-doom
+    selectors:
+      - namespace: hydra-doom-dev
         labels:
           run-on: fargate
