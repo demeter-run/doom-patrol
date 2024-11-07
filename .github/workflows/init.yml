@@ -18,8 +18,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - context: .
-            file: docker/dockerfile.init
+          - context: docker
+            file: dockerfile.init
             endpoint: demeter-run/doom-patrol-init
 
     continue-on-error: true
