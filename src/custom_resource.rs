@@ -141,7 +141,7 @@ impl HydraDoomNode {
             "--ledger-protocol-parameters".to_string(),
             format!("{}/protocol-parameters.json", constants.config_dir),
             "--persistence-dir".to_string(),
-            format!("{}/hydra-state", constants.persistence_dir),
+            constants.persistence_dir.clone(),
         ];
 
         let main_container_args = if self.spec.offline.unwrap_or(false) {
@@ -331,7 +331,7 @@ impl HydraDoomNode {
                             args: Some(vec![
                                 "gen-hydra-key".to_string(),
                                 "--output-file".to_string(),
-                                format!("{}/hydra", constants.data_dir),
+                                format!("{}/keys/hydra", constants.data_dir),
                             ]),
                             volume_mounts: Some(vec![VolumeMount {
                                 name: "data".to_string(),
