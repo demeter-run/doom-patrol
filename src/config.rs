@@ -13,7 +13,6 @@ pub fn get_config() -> &'static Config {
 pub struct Config {
     pub image: String,
     pub init_image: String,
-    pub open_head_image: String,
     pub sidecar_image: String,
     pub configmap: String,
     pub secret: String,
@@ -34,7 +33,6 @@ impl Config {
     pub fn from_env() -> Self {
         Self {
             image: env::var("IMAGE").unwrap_or("ghcr.io/cardano-scaling/hydra-node".into()),
-            open_head_image: env::var("OPEN_HEAD_IMAGE").expect("Missing OPEN_HEAD_IMAGE env var"),
             sidecar_image: env::var("SIDECAR_IMAGE").expect("Missing SIDECAR_IMAGE env var"),
             configmap: env::var("CONFIGMAP").expect("Missing CONFIGMAP env var"),
             secret: env::var("SECRET").expect("Missing SECRET env var"),

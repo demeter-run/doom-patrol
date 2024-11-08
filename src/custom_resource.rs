@@ -283,51 +283,6 @@ impl HydraDoomNode {
 
         // Offline is optional. If undefined, the node is presumed to be online.
         if !self.spec.offline.unwrap_or(false) {
-            let mut open_head_args = vec![
-                "open-head".to_string(),
-                "--network-id".to_string(),
-                self.spec.network_id.unwrap_or(0).to_string(),
-                "--seed-input".to_string(),
-                self.spec.seed_input.clone(),
-                "--participant".to_string(),
-                config.admin_addr.clone(),
-                "--party-verification-file".to_string(),
-                format!("{}/keys/hydra.vk", constants.data_dir),
-                "--cardano-key-file".to_string(),
-                format!("{}/admin.sk", constants.secret_dir),
-                "--blockfrost-key".to_string(),
-                config.blockfrost_key.clone(),
-            ];
-            if !self.spec.commit_inputs.is_empty() {
-                open_head_args.push("--commit-inputs".to_string());
-                open_head_args.extend(self.spec.commit_inputs.clone());
-            }
-
-            containers.push(Container {
-                name: "open-head".to_string(),
-                image: Some(config.open_head_image.clone()),
-                args: Some(open_head_args),
-                volume_mounts: Some(vec![
-                    VolumeMount {
-                        name: "config".to_string(),
-                        mount_path: constants.config_dir.clone(),
-                        ..Default::default()
-                    },
-                    VolumeMount {
-                        name: "secret".to_string(),
-                        mount_path: constants.secret_dir.clone(),
-                        ..Default::default()
-                    },
-                    VolumeMount {
-                        name: "data".to_string(),
-                        mount_path: constants.data_dir.clone(),
-                        ..Default::default()
-                    },
-                ]),
-                resources: None,
-                ..Default::default()
-            });
-
             containers.push(Container {
                 name: "dmtrctl".to_string(),
                 image: Some(constants.dmtrctl_image.to_string()),
