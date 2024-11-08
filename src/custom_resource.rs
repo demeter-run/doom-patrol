@@ -57,6 +57,15 @@ impl Default for Resources {
         }
     }
 }
+impl From<Resources> for ResourceRequirements {
+    fn from(value: Resources) -> Self {
+        ResourceRequirements {
+            requests: Some((&value.requests).into()),
+            limits: Some((&value.limits).into()),
+            ..Default::default()
+        }
+    }
+}
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
@@ -249,17 +258,7 @@ impl HydraDoomNode {
                         ..Default::default()
                     },
                 ]),
-                resources: Some(
-                    self.spec
-                        .resources
-                        .as_ref()
-                        .map(|resources| ResourceRequirements {
-                            requests: Some((&resources.requests).into()),
-                            limits: Some((&resources.limits).into()),
-                            ..Default::default()
-                        })
-                        .unwrap_or_default(),
-                ),
+                resources: Some(self.spec.resources.clone().unwrap_or_default().into()),
                 ..Default::default()
             },
             Container {
