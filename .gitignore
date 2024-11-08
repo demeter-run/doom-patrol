@@ -11,7 +11,7 @@ utxo.json
 /hydra-state/
 .DS_Store
 .pre-commit-config.yaml
-/playbook/local.tfstate*
-/playbook/.terraform*
+**/local.tfstate*
+**/.terraform*
 
 env.auto.tfvars
