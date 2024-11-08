@@ -7,7 +7,13 @@ on:
     paths:
       - ".github/workflows/hydra.yml"
       - "docker/dockerfile.hydra"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      HCP_BRANCH:
+        description: "Hydra Control Plane branch to build"
+        required: false
+        type: string
+        default: "main"
 
 jobs:
   build-images:
@@ -38,4 +44,7 @@ jobs:
           file: ${{ matrix.file }}
           platforms: linux/amd64
           push: true
-          tags: ghcr.io/${{ matrix.endpoint }},ghcr.io/${{ matrix.endpoint }}:${{ github.sha }}
+          build-args: BRANCH=${{ github.event.inputs.HCP_BRANCH }}
+          tags:
+            ghcr.io/${{ matrix.endpoint }},ghcr.io/${{ matrix.endpoint }}:${{
+            github.sha }}
