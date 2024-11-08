@@ -1,37 +1,8 @@
-# apiVersion: hydra.doom/v1alpha1
-# kind: HydraDoomNode
-# metadata:
-#   name: 5py7r5
-#   namespace: hydra-doom
-# spec:
-#   seedInput: c99e43be4f79e7570753a2efc3335503a43a770524eb05dd3ffc549dad9fd945#1
-#   commitInputs: []
-# ---
 apiVersion: hydra.doom/v1alpha1
 kind: HydraDoomNode
 metadata:
-  name: a00001
+  name: a00000
   namespace: hydra-doom
-spec:
-  offline: true
-  seedInput: _unused
-  commitInputs: []
----
-apiVersion: hydra.doom/v1alpha1
-kind: HydraDoomNode
-metadata:
-  name: a00002
-  namespace: hydra-doom-dev
-spec:
-  offline: true
-  seedInput: _unused
-  commitInputs: []
----
-apiVersion: hydra.doom/v1alpha1
-kind: HydraDoomNode
-metadata:
-  name: testoffline
-  namespace: hydra-doom-dev
 spec:
   offline: true
   seedInput: _unused
