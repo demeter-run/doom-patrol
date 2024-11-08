@@ -258,7 +258,7 @@ impl HydraDoomNode {
                             limits: Some((&resources.limits).into()),
                             ..Default::default()
                         })
-                        .unwrap_or(Default::default()),
+                        .unwrap_or_default(),
                 ),
                 ..Default::default()
             },
