@@ -12,6 +12,7 @@ pub fn get_config() -> &'static Config {
 #[derive(Debug, Clone)]
 pub struct Config {
     pub image: String,
+    pub init_image: String,
     pub open_head_image: String,
     pub sidecar_image: String,
     pub configmap: String,
@@ -24,6 +25,9 @@ pub struct Config {
     pub dmtr_project_id: String,
     pub dmtr_api_key: String,
     pub dmtr_port_name: String,
+    pub bucket: String,
+    pub init_aws_access_key_id: String,
+    pub init_aws_secret_access_key: String,
 }
 
 impl Config {
@@ -43,6 +47,12 @@ impl Config {
             dmtr_project_id: env::var("DMTR_PROJECT_ID").expect("Missing DMTR_PROJECT_ID env var."),
             dmtr_api_key: env::var("DMTR_API_KEY").expect("Missing DMTR_API_KEY env var."),
             dmtr_port_name: env::var("DMTR_PORT_NAME").expect("Missing DMTR_PORT_NAME env var."),
+            init_image: env::var("INIT_IMAGE").expect("Missing INIT_IMAGE env var."),
+            bucket: env::var("BUCKET").expect("Missing BUCKET env var."),
+            init_aws_access_key_id: env::var("INIT_AWS_ACCESS_KEY_ID")
+                .expect("Missing INIT_AWS_ACCESS_KEY_ID env var."),
+            init_aws_secret_access_key: env::var("INIT_AWS_SECRET_ACCESS_KEY")
+                .expect("Missing INIT_AWS_SECRET_ACCESS_KEY env var."),
         }
     }
 }
