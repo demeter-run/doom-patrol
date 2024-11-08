@@ -43,6 +43,20 @@ pub struct Resources {
     pub requests: ResourcesInner,
     pub limits: ResourcesInner,
 }
+impl Default for Resources {
+    fn default() -> Self {
+        Resources {
+            requests: ResourcesInner {
+                cpu: "2".to_string(),
+                memory: "4Gi".to_string(),
+            },
+            limits: ResourcesInner {
+                cpu: "2".to_string(),
+                memory: "4Gi".to_string(),
+            },
+        }
+    }
+}
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
@@ -235,15 +249,17 @@ impl HydraDoomNode {
                         ..Default::default()
                     },
                 ]),
-                resources: self
-                    .spec
-                    .resources
-                    .as_ref()
-                    .map(|resources| ResourceRequirements {
-                        requests: Some((&resources.requests).into()),
-                        limits: Some((&resources.limits).into()),
-                        ..Default::default()
-                    }),
+                resources: Some(
+                    self.spec
+                        .resources
+                        .as_ref()
+                        .map(|resources| ResourceRequirements {
+                            requests: Some((&resources.requests).into()),
+                            limits: Some((&resources.limits).into()),
+                            ..Default::default()
+                        })
+                        .unwrap_or(Default::default()),
+                ),
                 ..Default::default()
             },
             Container {
