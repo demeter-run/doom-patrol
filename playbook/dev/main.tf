@@ -1,6 +1,6 @@
 locals {
   namespace      = "hydra-doom-dev"
-  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-6c44eb2"
+  operator_image = "ghcr.io/demeter-run/doom-patrol-operator:sha-3b7a515"
 }
 
 terraform {
