@@ -63,6 +63,15 @@ resource "kubernetes_deployment_v1" "control_plane" {
             value = "${local.secret_mount_path}/admin.sk"
           }
 
+          env {
+            name = "KUBERNETES_NAMESPACE"
+            value_from {
+              field_ref {
+                field_path = "metadata.namespace"
+              }
+            }
+          }
+
           volume_mount {
             name       = "secret"
             mount_path = local.secret_mount_path
@@ -138,7 +147,7 @@ resource "kubernetes_ingress_v1" "control_plane_ingress" {
   spec {
     ingress_class_name = "nginx"
     rule {
-      host = "api.${var.external_domain}"
+      host = "${var.control_plane_prefix}.${var.external_domain}"
       http {
         path {
           path      = "/"

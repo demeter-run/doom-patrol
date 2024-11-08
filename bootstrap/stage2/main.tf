@@ -40,6 +40,11 @@ variable "external_domain" {
   type = string
 }
 
+variable "control_plane_prefix" {
+  type    = string
+  default = "api"
+}
+
 variable "external_port" {
   type = number
 }
