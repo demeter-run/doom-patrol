@@ -5,7 +5,7 @@ resource "kubernetes_config_map" "node-config" {
   }
 
   data = {
-    "admin.sk"                 = "${file("${path.module}/admin.sk")}"
-    "protocol-parameters.json" = "${file("${path.module}/protocol-parameters.json")}"
+    "admin.sk"                 = var.admin_key
+    "protocol-parameters.json" = var.protocol_parameters
   }
 }
