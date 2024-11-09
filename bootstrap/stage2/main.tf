@@ -49,8 +49,14 @@ variable "external_port" {
   type = number
 }
 
-variable "admin_key_path" {
-  type = string
+variable "admin_key" {
+  type        = string
+  description = "The admin key in cardano-cli JSON format."
+}
+
+variable "protocol_parameters" {
+  type        = string
+  description = "The protocol parameters in JSON format."
 }
 
 variable "admin_addr" {
