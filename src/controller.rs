@@ -301,6 +301,7 @@ impl K8sContext {
                 ),
             };
         }
+
         let default = HydraDoomNodeStatus::offline(crd, &self.config, &self.constants);
 
         match reqwest::get(&url).await {
@@ -325,11 +326,12 @@ impl K8sContext {
                                 .clone()
                                 .samples
                                 .into_iter()
-                                .find(|sample| sample.metric == self.constants.state_metric)
+                                .find(|sample| sample.metric == self.constants.transactions_metric)
                                 .map(|sample| match sample.value {
                                     prometheus_parse::Value::Counter(count) => count.round() as i64,
                                     _ => 0,
                                 });
+
                             match (state, transactions) {
                                 (Some(state), Some(transactions)) => HydraDoomNodeStatus {
                                     transactions,
